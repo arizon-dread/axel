@@ -79,7 +79,7 @@ public class SynchBrokerRouteBuilder extends RouteBuilder {
         .setHeader(ShsHeaders.DESTINATION_URI, method("shsRouter", "resolveEndpoint(${body.label})"))
         .setHeader(Exchange.CONTENT_TYPE, constant("message/rfc822"))
         .beanRef("messageLogService", "loadMessage")
-        .to("shs:local")
+        .process(new ShsSubProcessor(header(ShsHeaders.DESTINATION_URI)))
         .bean(ReplyLabelProcessor.class)
         .beanRef("messageLogService", "saveMessageStream");
     }
