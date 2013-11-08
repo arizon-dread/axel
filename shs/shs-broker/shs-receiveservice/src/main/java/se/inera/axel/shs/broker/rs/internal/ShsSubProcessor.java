@@ -56,7 +56,7 @@ public class ShsSubProcessor implements Processor {
 			@Override
 			public void process(Exchange exchange) throws Exception {
 				Object body = inExchange.getIn().getBody();
-
+                exchange.getIn().setHeader(Exchange.CONTENT_TYPE, inExchange.getIn().getHeader(Exchange.CONTENT_TYPE));
 				exchange.getIn().setBody(body);
 			}	
 		});
