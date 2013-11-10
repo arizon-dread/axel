@@ -22,12 +22,19 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.Processor;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.component.http.HttpProducer;
 import org.apache.camel.impl.DefaultProducer;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import se.inera.axel.shs.camel.ShsMessageRequestEntity;
+import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
 
+import java.io.InputStream;
 import java.util.Map;
 
 /**
@@ -36,49 +43,29 @@ import java.util.Map;
 public class ShsProducer extends DefaultProducer {
     private static final transient Logger log = LoggerFactory.getLogger(ShsProducer.class);
     private ShsEndpoint endpoint;
-    private ProducerTemplate producerTemplate;
-    
+
     public ShsProducer(ShsEndpoint endpoint) {
         super(endpoint);
         this.endpoint = endpoint;
-        this.producerTemplate = endpoint.getCamelContext().createProducerTemplate();
     }
 
-    public void process(final Exchange inExchange) throws Exception {
-    	Exchange returnedExchange = producerTemplate.send(getDestinationUri(inExchange), ExchangePattern.InOut, new Processor() {
+    @Override
+    public void process(final Exchange exchange) throws Exception {
+        HttpClient httpClient = new HttpClient();
 
-			@Override
-			public void process(Exchange exchange) throws Exception {
-				Object body = inExchange.getIn().getBody();
+        PostMethod postMethod = new PostMethod(getDestinationUri(exchange));
 
-				exchange.getIn().setBody(body);
-			}	
-		});
+        postMethod.setRequestEntity(new ShsMessageRequestEntity(exchange.getIn().getBody(ShsMessage.class)));
 
-		Object body = getBody(returnedExchange);
-		log.debug("Returned body {}", body);
-		inExchange.getIn().setBody(body);
+        int statusCode = httpClient.executeMethod(postMethod);
+        switch (statusCode) {
+            case 202:
+            case 200:
 
-        Map<String, Object> headers = returnedExchange.getOut().getHeaders();
-        for (String key: headers.keySet()) {
-            if (key.startsWith("x-shs")) {
-                inExchange.getIn().setHeader(key, headers.get(key));
-            }
         }
-
-		if (isException(returnedExchange)) {
-			handleException(inExchange, returnedExchange);
-		}
 	}
 
-	private void handleException(final Exchange inExchange,
-			Exchange returnedExchange) {
-		endpoint.getExceptionHandler().handleException(inExchange, returnedExchange);
-	}
 
-	private boolean isException(Exchange returnedExchange) {
-		return endpoint.getExceptionHandler().isException(returnedExchange);
-	}
 
 	private String getDestinationUri(Exchange exchange) {
 		String destinationUri = exchange.getIn().getHeader(ShsHeaders.DESTINATION_URI, String.class);
@@ -90,11 +77,5 @@ public class ShsProducer extends DefaultProducer {
 		return destinationUri;
 	}
 
-	private Object getBody(Exchange returnedExchange) {
-		if (returnedExchange.hasOut()) {
-			return returnedExchange.getOut().getBody();
-		} else {
-			return returnedExchange.getIn().getBody();
-		}
-	}
+
 }

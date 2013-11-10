@@ -43,7 +43,7 @@ public class ShsComponent extends DefaultComponent {
         
         // TODO add remaining parameters to URI
         endpoint.setDestinationUri(remaining);
-        
+
         return endpoint;
     }
 }
