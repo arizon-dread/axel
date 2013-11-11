@@ -33,12 +33,13 @@ import org.slf4j.LoggerFactory;
 import se.inera.axel.shs.camel.ShsMessageRequestEntity;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
+import se.inera.axel.shs.xml.label.TransferType;
 
 import java.io.InputStream;
 import java.util.Map;
 
 /**
- * The HelloWorld producer.
+ * Camel SHS Message producer.
  */
 public class ShsProducer extends DefaultProducer {
     private static final transient Logger log = LoggerFactory.getLogger(ShsProducer.class);
@@ -51,11 +52,22 @@ public class ShsProducer extends DefaultProducer {
 
     @Override
     public void process(final Exchange exchange) throws Exception {
-        HttpClient httpClient = new HttpClient();
+
+        ShsMessage shsMessage = exchange.getIn().getBody(ShsMessage.class);
+
+        if (shsMessage.getLabel().getTransferType() == TransferType.ASYNCH) {
+            doAsynchDelivery(shsMessage);
+        } else {
+            doSynchDelivery(shsMessage);
+        }
+
+	}
+
+    private void doAsynchDelivery(ShsMessage shsMessage) {
+        HttpClient httpClient = getHttpClient();
 
         PostMethod postMethod = new PostMethod(getDestinationUri(exchange));
-
-        postMethod.setRequestEntity(new ShsMessageRequestEntity(exchange.getIn().getBody(ShsMessage.class)));
+        postMethod.setRequestEntity(new ShsMessageRequestEntity(shsMessage));
 
         int statusCode = httpClient.executeMethod(postMethod);
         switch (statusCode) {
@@ -63,8 +75,14 @@ public class ShsProducer extends DefaultProducer {
             case 200:
 
         }
-	}
 
+    }
+
+    private HttpClient getHttpClient() {
+        HttpClient httpClient = new HttpClient();
+
+        return httpClient;
+    }
 
 
 	private String getDestinationUri(Exchange exchange) {
