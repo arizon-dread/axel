@@ -19,24 +19,17 @@
 package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.Processor;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.component.http.HttpProducer;
 import org.apache.camel.impl.DefaultProducer;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.inera.axel.shs.camel.ShsMessageRequestEntity;
+import se.inera.axel.shs.camel.DefaultCamelToShsMessageProcessor;
+import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
+import se.inera.axel.shs.client.ShsClient;
+import se.inera.axel.shs.exception.IllegalMessageStructureException;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
-import se.inera.axel.shs.xml.label.TransferType;
 
-import java.io.InputStream;
-import java.util.Map;
+import java.io.IOException;
 
 /**
  * Camel SHS Message producer.
@@ -45,55 +38,67 @@ public class ShsProducer extends DefaultProducer {
     private static final transient Logger log = LoggerFactory.getLogger(ShsProducer.class);
     private ShsEndpoint endpoint;
 
+    ShsClient shsClient;
+
     public ShsProducer(ShsEndpoint endpoint) {
         super(endpoint);
         this.endpoint = endpoint;
+
+        shsClient = new ShsClient();
+        shsClient.setRsUrl(endpoint.getDestinationUri());
     }
 
     @Override
     public void process(final Exchange exchange) throws Exception {
 
-        ShsMessage shsMessage = exchange.getIn().getBody(ShsMessage.class);
+        ShsMessage shsMessage;
 
-        if (shsMessage.getLabel().getTransferType() == TransferType.ASYNCH) {
-            doAsynchDelivery(shsMessage);
+        Object body = exchange.getIn().getBody();
+        if (body instanceof ShsMessage) {
+            shsMessage = (ShsMessage)body;
         } else {
-            doSynchDelivery(shsMessage);
+            new DefaultCamelToShsMessageProcessor().process(exchange);
+        }
+
+        shsMessage = exchange.getIn().getBody(ShsMessage.class);
+
+        if (shsMessage == null || shsMessage.getLabel() == null) {
+            throw new IllegalMessageStructureException("Camel exchange can not be evaluated as an ShsMessage");
+        }
+
+        switch (shsMessage.getLabel().getTransferType()) {
+            case ASYNCH:
+                doAsynchSend(exchange, shsMessage);
+                break;
+            case SYNCH:
+                doSynchSend(exchange, shsMessage);
+                break;
+            default:
+                throw new IllegalMessageStructureException("TransferType must be specified on message");
         }
 
 	}
 
-    private void doAsynchDelivery(ShsMessage shsMessage) {
-        HttpClient httpClient = getHttpClient();
+    private void doAsynchSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
+        ShsClient shsClient = getShsClient();
 
-        PostMethod postMethod = new PostMethod(getDestinationUri(exchange));
-        postMethod.setRequestEntity(new ShsMessageRequestEntity(shsMessage));
-
-        int statusCode = httpClient.executeMethod(postMethod);
-        switch (statusCode) {
-            case 202:
-            case 200:
-
-        }
-
+        String txId = shsClient.send(shsMessage);
+        exchange.getIn().setBody(txId);
+        exchange.getIn().setHeader(ShsHeaders.X_SHS_TXID, txId);
     }
 
-    private HttpClient getHttpClient() {
-        HttpClient httpClient = new HttpClient();
+    private void doSynchSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
+        ShsClient shsClient = getShsClient();
 
-        return httpClient;
+        ShsMessage response = shsClient.request(shsMessage);
+        exchange.getIn().setBody(response);
+
+        new DefaultShsMessageToCamelProcessor().process(exchange);
     }
 
-
-	private String getDestinationUri(Exchange exchange) {
-		String destinationUri = exchange.getIn().getHeader(ShsHeaders.DESTINATION_URI, String.class);
-		
-		if (StringUtils.isBlank(destinationUri)) {
-			destinationUri = endpoint.getDestinationUri(); 
-		}
-		
-		return destinationUri;
-	}
+    private ShsClient getShsClient() {
+        return shsClient;
+    }
 
 
 }

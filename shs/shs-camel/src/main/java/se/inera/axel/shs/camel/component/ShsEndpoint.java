@@ -24,7 +24,7 @@ import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultEndpoint;
 
 /**
- * Represents a HelloWorld endpoint.
+ * Represents an SHS endpoint.
  */
 public class ShsEndpoint extends DefaultEndpoint {
 	private ShsExceptionHandler exceptionHandler;
@@ -35,10 +35,6 @@ public class ShsEndpoint extends DefaultEndpoint {
 
     public ShsEndpoint(String uri, ShsComponent component) {
         super(uri, component);
-    }
-
-    public ShsEndpoint(String endpointUri) {
-        super(endpointUri);
     }
 
     public Producer createProducer() throws Exception {

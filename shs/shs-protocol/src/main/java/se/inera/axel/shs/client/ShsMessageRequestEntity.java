@@ -1,7 +1,9 @@
-package se.inera.axel.shs.camel;
+package se.inera.axel.shs.client;
 
 import org.apache.commons.httpclient.methods.RequestEntity;
 import se.inera.axel.shs.mime.ShsMessage;
+import se.inera.axel.shs.processor.ShsHeaders;
+import se.inera.axel.shs.processor.ShsMessageMarshaller;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,6 +15,7 @@ import java.io.OutputStream;
  */
 public class ShsMessageRequestEntity implements RequestEntity {
     private final ShsMessage shsMessage;
+    private final ShsMessageMarshaller marshaller = new ShsMessageMarshaller();
 
     public ShsMessageRequestEntity(ShsMessage message) {
         this.shsMessage = message;
@@ -25,7 +28,7 @@ public class ShsMessageRequestEntity implements RequestEntity {
 
     @Override
     public void writeRequest(OutputStream out) throws IOException {
-        ShsMessageTypeConverter.marshaller.marshal(shsMessage, out);
+        marshaller.marshal(shsMessage, out);
     }
 
     @Override
@@ -35,6 +38,6 @@ public class ShsMessageRequestEntity implements RequestEntity {
 
     @Override
     public String getContentType() {
-        return "multipart/mixed";
+        return ShsHeaders.SHS_CONTENT_TYPE;
     }
 }
