@@ -42,10 +42,9 @@ public class ShsClient {
                     String txId;
 
                     if (header == null) {
-                        txId = shsMessage.getLabel().getTxId();
+                        return null;
                     } else {
                         txId = header.getValue();
-
                     }
 
                     return txId;
@@ -54,9 +53,13 @@ public class ShsClient {
 
                     String message = String.format("HTTP status code %d (%s): %s ",
                             postMethod.getStatusCode(), postMethod.getStatusText(),
-                            postMethod.getResponseBodyAsString(1024));
+                            postMethod.getResponseBodyAsString());
 
-                    throw new MissingDeliveryExecutionException(message);
+                    MissingDeliveryExecutionException e = new MissingDeliveryExecutionException(message);
+                    e.setContentId(shsMessage.getLabel().getContent().getContentId());
+                    e.setCorrId(shsMessage.getLabel().getCorrId());
+
+                    throw e;
             }
         } finally {
             postMethod.releaseConnection();
@@ -92,9 +95,12 @@ public class ShsClient {
 
                     String message = String.format("HTTP status code %d (%s): %s",
                             postMethod.getStatusCode(), postMethod.getStatusText(),
-                            postMethod.getResponseBodyAsString(1024));
+                            postMethod.getResponseBodyAsString());
+                    MissingDeliveryExecutionException e = new MissingDeliveryExecutionException(message);
+                    e.setContentId(shsMessage.getLabel().getContent().getContentId());
+                    e.setCorrId(shsMessage.getLabel().getCorrId());
 
-                    throw new MissingDeliveryExecutionException(message);
+                    throw e;
             }
         } finally {
             postMethod.releaseConnection();
