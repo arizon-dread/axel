@@ -20,7 +20,7 @@ package se.inera.axel.shs.broker.ds.internal;
 
 import org.apache.camel.Header;
 import org.apache.commons.lang.StringUtils;
-import se.inera.axel.shs.broker.messagestore.MessageLogService;
+import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.processor.TimestampConverter;
 import se.inera.axel.shs.xml.UrnProduct;
 import se.inera.axel.shs.xml.label.Status;
@@ -31,12 +31,12 @@ import java.util.ListIterator;
 
 /**
  * Converts camel header values (http headers and/or request parameters)
- * to a {@link MessageLogService.Filter} filter object suitable for listing messages.
+ * to a {@link se.inera.axel.shs.client.MessageListConditions} filter object suitable for listing messages.
  *
  */
 public class HeaderToFilterConverter {
 
-    public MessageLogService.Filter toFilter(
+    public MessageListConditions toFilter(
             @Header("producttype") String producttype,
             @Header("filter") String noAckfilter,
             @Header("maxhits") Integer maxHits,
@@ -51,7 +51,7 @@ public class HeaderToFilterConverter {
             @Header("endrecipient") String endrecipient)
     {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
 
 
         if ("noack".equals(noAckfilter))

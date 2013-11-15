@@ -29,6 +29,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import se.inera.axel.shs.broker.messagestore.*;
+import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.mime.DataPart;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsManagementMarshaller;
@@ -173,15 +174,15 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithEmptyShsAddressShouldReturnNone() throws Exception {
 
-        Iterable<ShsMessageEntry> list = messageLogService.listMessages(null, new MessageLogService.Filter());
+        Iterable<ShsMessageEntry> list = messageLogService.listMessages(null, new MessageListConditions());
         Assert.assertNotNull(list);
         Assert.assertTrue(list.iterator().hasNext() == false);
 
-        list = messageLogService.listMessages("", new MessageLogService.Filter());
+        list = messageLogService.listMessages("", new MessageListConditions());
         Assert.assertNotNull(list);
         Assert.assertTrue(list.iterator().hasNext() == false);
 
-        list = messageLogService.listMessages("    ", new MessageLogService.Filter());
+        list = messageLogService.listMessages("    ", new MessageListConditions());
         Assert.assertNotNull(list);
         Assert.assertTrue(list.iterator().hasNext() == false);
 
@@ -193,7 +194,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
 
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_TO,
-                        new MessageLogService.Filter());
+                        new MessageListConditions());
 
 
         Assert.assertNotNull(iter);
@@ -210,7 +211,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
 
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_TO,
-                        new MessageLogService.Filter());
+                        new MessageListConditions());
 
 
         Assert.assertNotNull(iter);
@@ -226,7 +227,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
 
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_TO,
-                        new MessageLogService.Filter());
+                        new MessageListConditions());
 
 
         Assert.assertNotNull(iter);
@@ -238,7 +239,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithOneProductId() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
         filter.getProductIds().add("confirm");
 
         Iterable<ShsMessageEntry> iter =
@@ -253,7 +254,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithTwoProductId() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
         filter.getProductIds().add("confirm");
         filter.getProductIds().add("error");
 
@@ -269,7 +270,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithMaxHits() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
 
         filter.setMaxHits(2);
         Iterable<ShsMessageEntry> iter = messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_TO, filter);
@@ -284,7 +285,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithNoAck() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
 
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_TO, filter);
@@ -306,7 +307,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithStatus() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
 
         filter.setStatus(Status.TEST);
         Iterable<ShsMessageEntry> iter =
@@ -323,7 +324,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithEndRecipient() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_FROM, filter);
 
@@ -346,7 +347,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithOriginator() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_FROM, filter);
 
@@ -368,7 +369,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithCorrId() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
         filter.setCorrId("testing-corrid");
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_FROM, filter);
@@ -382,7 +383,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithContentId() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
         filter.setContentId("testing-contentid");
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_FROM, filter);
@@ -396,7 +397,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test
     public void listMessagesWithMeta() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
         filter.setMetaName("namn");
         filter.setMetaValue("varde");
         Iterable<ShsMessageEntry> iter =
@@ -435,7 +436,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     public void listMessagesWithSince() throws Exception {
 
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_FROM, filter);
 
@@ -463,7 +464,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     public void listMessagesWithArrivalOrder() throws Exception {
 
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
         filter.setArrivalOrder("ascending");
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_FROM, filter);
@@ -580,7 +581,7 @@ public class MongoMessageLogServiceIT extends AbstractMongoMessageLogTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void listMessagesWithFaultyArrivalOrderShouldThrow() throws Exception {
 
-        MessageLogService.Filter filter = new MessageLogService.Filter();
+        MessageListConditions filter = new MessageListConditions();
         filter.setArrivalOrder("asc");
         Iterable<ShsMessageEntry> iter =
                 messageLogService.listMessages(ShsLabelMaker.DEFAULT_TEST_FROM, filter);

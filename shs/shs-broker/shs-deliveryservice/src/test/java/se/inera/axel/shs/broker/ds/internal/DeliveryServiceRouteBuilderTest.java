@@ -28,6 +28,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.broker.messagestore.MessageLogService;
 import se.inera.axel.shs.broker.messagestore.ShsMessageEntry;
 import se.inera.axel.shs.mime.ShsMessage;
@@ -36,7 +37,6 @@ import se.inera.axel.shs.xml.message.Message;
 import se.inera.axel.shs.xml.message.ShsMessageList;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -47,7 +47,7 @@ import static org.hamcrest.beans.HasPropertyWithValue.hasProperty;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
-import static se.inera.axel.shs.broker.messagestore.MessageLogService.Filter.SortOrder.DESCENDING;
+import static se.inera.axel.shs.client.MessageListConditions.SortOrder.DESCENDING;
 
 @ContextConfiguration
 public class DeliveryServiceRouteBuilderTest extends AbstractCamelTestNGSpringContextTests {
@@ -383,7 +383,7 @@ public class DeliveryServiceRouteBuilderTest extends AbstractCamelTestNGSpringCo
 
         verify(messageLogService).listMessages(
                 eq(ShsLabelMaker.DEFAULT_TEST_TO),
-                (MessageLogService.Filter)argThat(
+                (MessageListConditions)argThat(
                         allOf(hasProperty("noAck", is(true)),
                                 hasProperty("since", nullValue()))));
 
@@ -404,7 +404,7 @@ public class DeliveryServiceRouteBuilderTest extends AbstractCamelTestNGSpringCo
 
         verify(messageLogService).listMessages(
                 eq(ShsLabelMaker.DEFAULT_TEST_TO),
-                (MessageLogService.Filter)argThat(
+                (MessageListConditions)argThat(
                         allOf(hasProperty("noAck", is(false)),
                                 hasProperty("productIds",
                                         containsInAnyOrder("error", "confirm")),
