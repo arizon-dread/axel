@@ -28,8 +28,9 @@ import org.apache.camel.impl.DefaultComponent;
  */
 public class ShsComponent extends DefaultComponent {
 
-    protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        ShsEndpoint endpoint = new ShsEndpoint(uri, this);
+    @Override
+    protected ShsEndpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
+        ShsEndpoint endpoint = new ShsEndpoint(uri, this, remaining, parameters);
         
         ShsExceptionHandler exceptionHandler = getAndRemoveParameter(parameters, "exceptionHandler", ShsExceptionHandler.class);
         if (exceptionHandler == null) {
@@ -40,10 +41,9 @@ public class ShsComponent extends DefaultComponent {
         endpoint.setExceptionHandler(exceptionHandler);
         
         setProperties(endpoint, parameters);
-        
-        // TODO add remaining parameters to URI
-        endpoint.setDestinationUri(remaining);
 
         return endpoint;
     }
+
+
 }

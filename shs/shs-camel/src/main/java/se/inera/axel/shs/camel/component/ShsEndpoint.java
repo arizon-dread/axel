@@ -21,28 +21,38 @@ package se.inera.axel.shs.camel.component;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
+import org.apache.camel.impl.DefaultComponent;
 import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.impl.ScheduledPollEndpoint;
+
+import java.util.Map;
 
 /**
  * Represents an SHS endpoint.
  */
-public class ShsEndpoint extends DefaultEndpoint {
+public class ShsEndpoint extends ScheduledPollEndpoint {
 	private ShsExceptionHandler exceptionHandler;
 	private String destinationUri;
+    String remaining;
+    Map<String, Object> parameters;
 
-    public ShsEndpoint() {
-    }
-
-    public ShsEndpoint(String uri, ShsComponent component) {
+    public ShsEndpoint(String uri, ShsComponent component, String remaining, Map<String, Object> parameters) {
         super(uri, component);
+        this.remaining = remaining;
+        this.parameters = parameters;
+
     }
 
     public Producer createProducer() throws Exception {
-        return new ShsProducer(this);
+        return new ShsProducer(this, remaining);
     }
 
     public Consumer createConsumer(Processor processor) throws Exception {
-        return new ShsConsumer(this, processor);
+        ShsConsumer shsConsumer = new ShsConsumer(this, processor, remaining);
+        configureConsumer(shsConsumer);
+        shsConsumer.setSchedulerProperties(parameters);
+
+        return shsConsumer;
     }
 
     public boolean isSingleton() {
@@ -55,13 +65,5 @@ public class ShsEndpoint extends DefaultEndpoint {
 
 	public void setExceptionHandler(ShsExceptionHandler exceptionHandler) {
 		this.exceptionHandler = exceptionHandler;
-	}
-
-	public String getDestinationUri() {
-		return destinationUri;
-	}
-
-	public void setDestinationUri(String uri) {
-		this.destinationUri = uri;
 	}
 }

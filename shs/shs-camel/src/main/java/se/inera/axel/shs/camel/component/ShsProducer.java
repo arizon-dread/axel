@@ -37,15 +37,17 @@ import java.io.IOException;
 public class ShsProducer extends DefaultProducer {
     private static final transient Logger log = LoggerFactory.getLogger(ShsProducer.class);
     private ShsEndpoint endpoint;
+    String remaining;
 
     ShsClient shsClient;
 
-    public ShsProducer(ShsEndpoint endpoint) {
+    public ShsProducer(ShsEndpoint endpoint, String remaining) {
         super(endpoint);
         this.endpoint = endpoint;
+        this.remaining = remaining;
 
         shsClient = new ShsClient();
-        shsClient.setRsUrl(endpoint.getDestinationUri());
+        shsClient.setRsUrl(remaining);
     }
 
     @Override
@@ -58,9 +60,8 @@ public class ShsProducer extends DefaultProducer {
             shsMessage = (ShsMessage)body;
         } else {
             new DefaultCamelToShsMessageProcessor().process(exchange);
+            shsMessage = exchange.getIn().getBody(ShsMessage.class);
         }
-
-        shsMessage = exchange.getIn().getBody(ShsMessage.class);
 
         if (shsMessage == null || shsMessage.getLabel() == null) {
             throw new IllegalMessageStructureException("Camel exchange can not be evaluated as an ShsMessage");
