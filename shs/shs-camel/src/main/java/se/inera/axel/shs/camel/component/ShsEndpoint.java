@@ -21,36 +21,56 @@ package se.inera.axel.shs.camel.component;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultComponent;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.impl.ScheduledPollEndpoint;
-
-import java.util.Map;
+import org.apache.camel.util.ObjectHelper;
+import se.inera.axel.shs.client.MessageListConditions;
+import se.inera.axel.shs.client.ShsClient;
 
 /**
  * Represents an SHS endpoint.
  */
 public class ShsEndpoint extends ScheduledPollEndpoint {
 	private ShsExceptionHandler exceptionHandler;
-	private String destinationUri;
+
+    String to;
+    String from;
+    MessageListConditions filter;
+    ShsClient client;
+
     String remaining;
-    Map<String, Object> parameters;
 
-    public ShsEndpoint(String uri, ShsComponent component, String remaining, Map<String, Object> parameters) {
+    public ShsEndpoint(String uri, ShsComponent component, ShsClient client) {
         super(uri, component);
-        this.remaining = remaining;
-        this.parameters = parameters;
-
+        this.client = client;
     }
 
+    @Override
+    public boolean isLenientProperties() {
+        return false;
+    }
+
+    @Override
+    public ShsComponent getComponent() {
+        return (ShsComponent)super.getComponent();
+    }
+
+
     public Producer createProducer() throws Exception {
-        return new ShsProducer(this, remaining);
+
+        ObjectHelper.notNull(getClient(), "client");
+        ObjectHelper.notEmpty(getClient().getRsUrl(), "rsUrl");
+
+        return new ShsProducer(this);
     }
 
     public Consumer createConsumer(Processor processor) throws Exception {
-        ShsConsumer shsConsumer = new ShsConsumer(this, processor, remaining);
+
+        ObjectHelper.notNull(getClient(), "client");
+        ObjectHelper.notEmpty(getClient().getDsUrl(), "'dsUrl'");
+        ObjectHelper.notEmpty(getTo(), "'to'");
+
+        ShsConsumer shsConsumer = new ShsConsumer(this, processor);
         configureConsumer(shsConsumer);
-        shsConsumer.setSchedulerProperties(parameters);
 
         return shsConsumer;
     }
@@ -66,4 +86,36 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
 	public void setExceptionHandler(ShsExceptionHandler exceptionHandler) {
 		this.exceptionHandler = exceptionHandler;
 	}
+
+    public String getTo() {
+        return to;
+    }
+
+    public void setTo(String to) {
+        this.to = to;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public void setFrom(String from) {
+        this.from = from;
+    }
+
+    public MessageListConditions getFilter() {
+        return filter;
+    }
+
+    public void setFilter(MessageListConditions filter) {
+        this.filter = filter;
+    }
+
+    public ShsClient getClient() {
+        return client;
+    }
+
+    public void setClient(ShsClient client) {
+        this.client = client;
+    }
 }

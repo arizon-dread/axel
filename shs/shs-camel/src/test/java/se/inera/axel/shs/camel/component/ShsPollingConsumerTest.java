@@ -22,10 +22,12 @@ import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.testng.CamelTestSupport;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.Test;
+import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.TransferType;
@@ -42,20 +44,38 @@ public class ShsPollingConsumerTest extends CamelTestSupport {
 //
 	@EndpointInject(uri = "mock:result")
 	MockEndpoint resultEndpoint;
-	
-	@Override
+
+    //ShsClient client = new ShsClient();
+
+    @Override
+    protected JndiRegistry createRegistry() throws Exception {
+        JndiRegistry reg = super.createRegistry();
+
+
+        ShsClient client = new ShsClient();
+        client.setRsUrl("http://localhost:8585/shs/rs");
+        client.setDsUrl("http://localhost:8585/shs/ds");
+
+        reg.bind("client", client);
+
+        return reg;
+    }
+
+    @Override
 	protected RouteBuilder createRouteBuilder() throws Exception {
 		return new RouteBuilder() {
 			
 			@Override
 			public void configure() throws Exception {
 				
-				from("shs:http://localhost:8585/shs/ds")
+				from("shs:client?to=0000000000.jmeter&status=TEST")
                 .to("file:/tmp/out")
 				.to("mock:result");
 
 			}
 		};
+
+
 	}
 	
 	@DirtiesContext

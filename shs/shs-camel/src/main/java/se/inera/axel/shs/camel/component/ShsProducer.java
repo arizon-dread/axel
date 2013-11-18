@@ -36,18 +36,14 @@ import java.io.IOException;
  */
 public class ShsProducer extends DefaultProducer {
     private static final transient Logger log = LoggerFactory.getLogger(ShsProducer.class);
-    private ShsEndpoint endpoint;
-    String remaining;
 
-    ShsClient shsClient;
-
-    public ShsProducer(ShsEndpoint endpoint, String remaining) {
+    public ShsProducer(ShsEndpoint endpoint) {
         super(endpoint);
-        this.endpoint = endpoint;
-        this.remaining = remaining;
+    }
 
-        shsClient = new ShsClient();
-        shsClient.setRsUrl(remaining);
+    @Override
+    public ShsEndpoint getEndpoint() {
+        return (ShsEndpoint)super.getEndpoint();
     }
 
     @Override
@@ -97,9 +93,9 @@ public class ShsProducer extends DefaultProducer {
         new DefaultShsMessageToCamelProcessor().process(exchange);
     }
 
-    private ShsClient getShsClient() {
-        return shsClient;
-    }
 
+    public ShsClient getShsClient() {
+        return getEndpoint().getClient();
+    }
 
 }

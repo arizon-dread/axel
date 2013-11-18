@@ -19,6 +19,7 @@
 package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.AsyncCallback;
+import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.impl.DefaultComponent;
@@ -30,27 +31,23 @@ import se.inera.axel.shs.xml.message.Message;
 import se.inera.axel.shs.xml.message.ShsMessageList;
 
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 
 /**
  * Camel SHS Message producer.
  */
 public class ShsConsumer extends ScheduledBatchPollingConsumer {
-    private final ShsEndpoint endpoint;
-
-    ShsClient shsClient;
-    String to = "0000000000";
 
 
-    public ShsConsumer(ShsEndpoint endpoint, Processor processor, String remaining) {
+    public ShsConsumer(ShsEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
-        this.endpoint = endpoint;
-
-        shsClient = new ShsClient();
-        shsClient.setDsUrl(remaining);
-
     }
 
+    @Override
+    public ShsEndpoint getEndpoint() {
+        return (ShsEndpoint)super.getEndpoint();
+    }
 
     @Override
     public int processBatch(Queue<Object> exchanges) throws Exception {
@@ -98,7 +95,7 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
 
 
         try {
-            ShsMessage shsMessage = getShsClient().fetch(getTo(), message.getTxId());
+            ShsMessage shsMessage = getShsClient().fetch(getEndpoint().getTo(), message.getTxId());
             exchange.getIn().setBody(shsMessage);
 
             // binding to convert from shs message to camel exchange.
@@ -119,7 +116,7 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
                     getExceptionHandler().handleException("Error processing exchange", exchange, exchange.getException());
                 } else {
                     try {
-                        getShsClient().ack(getTo(), message.getTxId());
+                        getShsClient().ack(getEndpoint().getTo(), message.getTxId());
                     } catch (Exception e) {
                         // TODO add logging and handling
                         e.printStackTrace();
@@ -138,11 +135,11 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
         ShsMessageList queryResult;
 
         try {
-            queryResult = shsClient.list(getTo(), null);
+            queryResult = getShsClient().list(getEndpoint().getTo(), getEndpoint().getFilter());
             LinkedList exchanges = new LinkedList();
 
             for (Message message : queryResult.getMessage()) {
-                Exchange exchange = endpoint.createExchange();
+                Exchange exchange = getEndpoint().createExchange();
                 exchange.setProperty(Message.class.getCanonicalName(), message);
                 exchanges.add(exchange);
             }
@@ -159,19 +156,9 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
         }
     }
 
-    public String getTo() {
-        return to;
-    }
-
-    public void setTo(String to) {
-        this.to = to;
-    }
 
     public ShsClient getShsClient() {
-        return shsClient;
+        return getEndpoint().getClient();
     }
 
-    public void setShsClient(ShsClient shsClient) {
-        this.shsClient = shsClient;
-    }
 }
