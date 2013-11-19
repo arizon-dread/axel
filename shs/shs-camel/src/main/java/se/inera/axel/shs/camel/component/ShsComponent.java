@@ -18,12 +18,12 @@
  */
 package se.inera.axel.shs.camel.component;
 
-import java.util.Map;
-
 import org.apache.camel.impl.DefaultComponent;
 import org.apache.camel.util.EndpointHelper;
 import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.client.ShsClient;
+
+import java.util.Map;
 
 /**
  * Represents the component that manages {@link ShsEndpoint}.
@@ -40,7 +40,8 @@ public class ShsComponent extends DefaultComponent {
         ShsEndpoint endpoint = new ShsEndpoint(uri, this, shsClient);
         setProperties(endpoint, parameters);
 
-        ShsExceptionHandler exceptionHandler = getAndRemoveParameter(parameters, "exceptionHandler", ShsExceptionHandler.class);
+        ShsExceptionHandler exceptionHandler =
+                getAndRemoveParameter(parameters, "exceptionHandler", ShsExceptionHandler.class);
         if (exceptionHandler == null) {
         	exceptionHandler = new DefaultShsExceptionHandler();
         }
@@ -48,14 +49,17 @@ public class ShsComponent extends DefaultComponent {
         
         endpoint.setExceptionHandler(exceptionHandler);
 
-        MessageListConditions filter = resolveAndRemoveReferenceParameter(parameters, "filter", MessageListConditions.class);
-        if (filter == null) {
-            filter = new MessageListConditions();
+        MessageListConditions conditions =
+                resolveAndRemoveReferenceParameter(parameters, "conditions", MessageListConditions.class);
+        if (conditions == null) {
+            conditions = new MessageListConditions();
+        } else {
+            conditions = conditions.copy();
         }
 
-        endpoint.setFilter(filter);
+        endpoint.setConditions(conditions);
 //        Map<String, Object> filterProperties = IntrospectionSupport.extractProperties(parameters, "filter.");
-        setProperties(filter, parameters);
+        setProperties(conditions, parameters);
 
 
         return endpoint;

@@ -6,20 +6,18 @@ import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.util.HttpURLConnection;
-import org.apache.commons.lang.StringUtils;
 import se.inera.axel.shs.exception.MissingDeliveryExecutionException;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.processor.ShsMessageListMarshaller;
 import se.inera.axel.shs.processor.ShsMessageMarshaller;
 import se.inera.axel.shs.xml.UrnAddress;
-import se.inera.axel.shs.xml.UrnProduct;
-import se.inera.axel.shs.xml.message.Message;
 import se.inera.axel.shs.xml.message.ShsMessageList;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ShsClient {
 
@@ -154,16 +152,47 @@ public class ShsClient {
         }
 
         List<NameValuePair> queryParams = new ArrayList();
-        StringBuffer ps = new StringBuffer();
-        for (String productType : conditions.getProductIds()) {
-            ps.append(UrnProduct.valueOf(productType).toUrnForm()).append(",");
-        }
+        if (conditions.getProducttype() != null)
+            queryParams.add(new NameValuePair("producttype", conditions.getProducttype()));
 
-        if (ps.length() > 0) {
-            String p = ps.toString();
-            NameValuePair param = new NameValuePair("producttype", p.substring(0, ps.length() - 1));
-            queryParams.add(param);
-        }
+        if (conditions.getSince() != null)
+            queryParams.add(new NameValuePair("since", conditions.getSince()));
+
+        if (conditions.getFilter() != null)
+            queryParams.add(new NameValuePair("filter", conditions.getFilter()));
+
+        if (conditions.getStatus() != null)
+            queryParams.add(new NameValuePair("status", conditions.getStatus()));
+
+        if (conditions.getOriginator() != null)
+            queryParams.add(new NameValuePair("originator", conditions.getOriginator()));
+
+        if (conditions.getEndrecipient() != null)
+            queryParams.add(new NameValuePair("endrecipient", conditions.getEndrecipient()));
+
+        if (conditions.getContentid() != null)
+            queryParams.add(new NameValuePair("contentid", conditions.getContentid()));
+
+        if (conditions.getCorrid() != null)
+            queryParams.add(new NameValuePair("corrid", conditions.getCorrid()));
+
+        if (conditions.getMaxhits() != null)
+            queryParams.add(new NameValuePair("maxhits", "" + conditions.getMaxhits()));
+
+        if (conditions.getMetaname() != null)
+            queryParams.add(new NameValuePair("metaname", conditions.getMetaname()));
+
+        if (conditions.getMetavalue() != null)
+            queryParams.add(new NameValuePair("metavalue", conditions.getMetavalue()));
+
+        if (conditions.getSortattribute() != null)
+            queryParams.add(new NameValuePair("sortattribute", conditions.getSortattribute()));
+
+        if (conditions.getSortorder() != null)
+            queryParams.add(new NameValuePair("sortorder", conditions.getSortorder()));
+
+        if (conditions.getArrivalorder() != null)
+            queryParams.add(new NameValuePair("arrivalorder", conditions.getArrivalorder()));
 
 
         return queryParams.toArray(new NameValuePair[0]);

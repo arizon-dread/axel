@@ -19,7 +19,6 @@
 package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.EndpointInject;
-import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.JndiRegistry;
@@ -28,14 +27,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.Test;
 import se.inera.axel.shs.client.ShsClient;
-import se.inera.axel.shs.mime.ShsMessage;
-import se.inera.axel.shs.processor.ShsHeaders;
-import se.inera.axel.shs.xml.label.TransferType;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static se.inera.axel.shs.mime.ShsMessageTestObjectMother.*;
 
 @ContextConfiguration
 public class ShsPollingConsumerTest extends CamelTestSupport {
@@ -68,7 +59,8 @@ public class ShsPollingConsumerTest extends CamelTestSupport {
 			@Override
 			public void configure() throws Exception {
 				
-				from("shs:client?to=0000000000.jmeter&status=TEST")
+				from("shs:client?to=0000000000.jmeter&status=test&producttype=00000000-0000-0000-0000-000000000000")
+                .to("log:se.inera.axel.ShsPollingConsumerTest?showAll=true")
                 .to("file:/tmp/out")
 				.to("mock:result");
 

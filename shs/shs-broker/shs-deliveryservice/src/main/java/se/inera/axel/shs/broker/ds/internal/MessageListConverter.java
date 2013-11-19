@@ -26,7 +26,7 @@ import se.inera.axel.shs.xml.message.Message;
 import se.inera.axel.shs.xml.message.ShsMessageList;
 
 /**
- * Converts output from {@link MessageLogService#listMessages(String, se.inera.axel.shs.client.MessageListConditions)}
+ * Converts output from {@link MessageLogService#listMessages(String, se.inera.axel.shs.broker.messagestore.MessageLogService.Filter)}
  * to {@link ShsMessageList}.
  *
  */

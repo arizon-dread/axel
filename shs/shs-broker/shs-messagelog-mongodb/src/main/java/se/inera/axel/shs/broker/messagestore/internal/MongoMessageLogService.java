@@ -29,7 +29,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import se.inera.axel.shs.broker.messagestore.*;
-import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.exception.OtherErrorException;
 import se.inera.axel.shs.exception.ShsException;
 import se.inera.axel.shs.mime.DataPart;
@@ -293,7 +292,7 @@ public class MongoMessageLogService implements MessageLogService {
     }
     
     @Override
-    public Iterable<ShsMessageEntry> listMessages(String shsTo, MessageListConditions filter) {
+    public Iterable<ShsMessageEntry> listMessages(String shsTo, Filter filter) {
 
         Criteria criteria = Criteria.where("label.to.value").is(shsTo).
                 and("label.transferType").is(TransferType.ASYNCH).
@@ -360,7 +359,7 @@ public class MongoMessageLogService implements MessageLogService {
         return mongoTemplate.find(query, ShsMessageEntry.class);
     }
 
-    private Sort createArrivalOrderSort(MessageListConditions filter) {
+    private Sort createArrivalOrderSort(Filter filter) {
         Sort.Direction arrivalOrderDirection = Sort.Direction.ASC;
 
         if ("descending".equalsIgnoreCase(filter.getArrivalOrder())) {
@@ -370,10 +369,10 @@ public class MongoMessageLogService implements MessageLogService {
         return new Sort(arrivalOrderDirection, "stateTimeStamp");
     }
 
-    private Sort createAttributeSort(MessageListConditions filter) {
+    private Sort createAttributeSort(Filter filter) {
         Sort.Direction direction = Sort.Direction.ASC;
 
-        if (filter.getSortOrder() == MessageListConditions.SortOrder.DESCENDING) {
+        if (filter.getSortOrder() == Filter.SortOrder.DESCENDING) {
             direction = Sort.Direction.DESC;
         }
 

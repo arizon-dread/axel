@@ -19,10 +19,8 @@
 package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.AsyncCallback;
-import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultComponent;
 import org.apache.camel.impl.ScheduledBatchPollingConsumer;
 import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
 import se.inera.axel.shs.client.ShsClient;
@@ -31,7 +29,6 @@ import se.inera.axel.shs.xml.message.Message;
 import se.inera.axel.shs.xml.message.ShsMessageList;
 
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Queue;
 
 /**
@@ -135,7 +132,7 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
         ShsMessageList queryResult;
 
         try {
-            queryResult = getShsClient().list(getEndpoint().getTo(), getEndpoint().getFilter());
+            queryResult = getShsClient().list(getEndpoint().getTo(), getEndpoint().getConditions());
             LinkedList exchanges = new LinkedList();
 
             for (Message message : queryResult.getMessage()) {

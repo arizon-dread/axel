@@ -24,8 +24,10 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import se.inera.axel.shs.broker.messagestore.*;
-import se.inera.axel.shs.client.MessageListConditions;
+import se.inera.axel.shs.broker.messagestore.MessageLogService;
+import se.inera.axel.shs.broker.messagestore.MessageState;
+import se.inera.axel.shs.broker.messagestore.ShsMessageEntry;
+import se.inera.axel.shs.broker.messagestore.ShsMessageEntryMaker;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.mime.ShsMessageMaker;
 import se.inera.axel.shs.xml.label.*;
@@ -108,7 +110,7 @@ public class MockConfig {
                         with(transferType, TransferType.ASYNCH))))));
 
 
-        given(messageLogService.listMessages(any(String.class), any(MessageListConditions.class)))
+        given(messageLogService.listMessages(any(String.class), any(MessageLogService.Filter.class)))
                 .willAnswer(new Answer<Iterable<ShsMessageEntry>>() {
                     @Override
                     public Iterable<ShsMessageEntry> answer(InvocationOnMock invocation) throws Throwable {

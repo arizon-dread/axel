@@ -34,10 +34,8 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
 
     String to;
     String from;
-    MessageListConditions filter;
+    MessageListConditions conditions;
     ShsClient client;
-
-    String remaining;
 
     public ShsEndpoint(String uri, ShsComponent component, ShsClient client) {
         super(uri, component);
@@ -103,12 +101,12 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         this.from = from;
     }
 
-    public MessageListConditions getFilter() {
-        return filter;
+    public MessageListConditions getConditions() {
+        return conditions;
     }
 
-    public void setFilter(MessageListConditions filter) {
-        this.filter = filter;
+    public void setConditions(MessageListConditions conditions) {
+        this.conditions = conditions;
     }
 
     public ShsClient getClient() {

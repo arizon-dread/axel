@@ -18,47 +18,44 @@
  */
 package se.inera.axel.shs.client;
 
-import se.inera.axel.shs.xml.label.Status;
+public class MessageListConditions implements Cloneable {
 
-import java.util.*;
-
-public class MessageListConditions {
-    Date since;
-    Boolean noAck = false;
-    Status status = Status.PRODUCTION;
+    String since;
+    String filter;
+    String status;
     String originator;
-    String endRecipient;
-    String corrId;
-    String contentId;
-    Integer maxHits;
-    List<String> productIds = new ArrayList<String>();
-    String metaName;
-    String metaValue;
-    String sortAttribute;
-    SortOrder sortOrder = SortOrder.ASCENDING;
-    String arrivalOrder = "ascending";
+    String endrecipient;
+    String corrid;
+    String contentid;
+    Integer maxhits;
+    String producttype;
+    String metaname;
+    String metavalue;
+    String sortattribute;
+    String sortorder;
+    String arrivalorder = "ascending";
 
-    public Date getSince() {
+    public String getSince() {
         return since;
     }
 
-    public void setSince(Date since) {
+    public void setSince(String since) {
         this.since = since;
     }
 
-    public Boolean getNoAck() {
-        return noAck;
+    public String getFilter() {
+        return filter;
     }
 
-    public void setNoAck(Boolean noAck) {
-        this.noAck = noAck;
+    public void setFilter(String filter) {
+        this.filter = filter;
     }
 
-    public Status getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -70,138 +67,111 @@ public class MessageListConditions {
         this.originator = originator;
     }
 
-    public String getEndRecipient() {
-        return endRecipient;
+    public String getEndrecipient() {
+        return endrecipient;
     }
 
-    public void setEndRecipient(String endRecipient) {
-        this.endRecipient = endRecipient;
+    public void setEndrecipient(String endrecipient) {
+        this.endrecipient = endrecipient;
     }
 
-    public String getCorrId() {
-        return corrId;
+    public String getCorrid() {
+        return corrid;
     }
 
-    public void setCorrId(String corrId) {
-        this.corrId = corrId;
+    public void setCorrid(String corrid) {
+        this.corrid = corrid;
     }
 
-    public String getContentId() {
-        return contentId;
+    public String getContentid() {
+        return contentid;
     }
 
-    public void setContentId(String contentId) {
-        this.contentId = contentId;
+    public void setContentid(String contentid) {
+        this.contentid = contentid;
     }
 
-    public Integer getMaxHits() {
-        return maxHits;
+    public Integer getMaxhits() {
+        return maxhits;
     }
 
-    public void setMaxHits(Integer maxHits) {
-        this.maxHits = maxHits;
+    public void setMaxhits(Integer maxhits) {
+        this.maxhits = maxhits;
     }
 
-    public List<String> getProductIds() {
-        return productIds;
+    public String getProducttype() {
+        return producttype;
     }
 
-    public void setProductIds(List<String> productIds) {
-        this.productIds = productIds;
+    public void setProducttype(String producttype) {
+        this.producttype = producttype;
     }
 
-    public String getSortAttribute() {
-        return sortAttribute;
+    public String getMetaname() {
+        return metaname;
     }
 
-    public void setSortAttribute(String sortAttribute) {
-        this.sortAttribute = sortAttribute;
+    public void setMetaname(String metaname) {
+        this.metaname = metaname;
     }
 
-    public SortOrder getSortOrder() {
-        return sortOrder;
+    public String getMetavalue() {
+        return metavalue;
     }
 
-    public void setSortOrder(String sortOrder) {
-        this.sortOrder = SortOrder.fromString(sortOrder);
+    public void setMetavalue(String metavalue) {
+        this.metavalue = metavalue;
     }
 
-    public String getArrivalOrder() {
-        return arrivalOrder;
+    public String getSortattribute() {
+        return sortattribute;
     }
 
-    public void setArrivalOrder(String arrivalOrder) {
-        if (arrivalOrder != null && !("descending".equalsIgnoreCase(arrivalOrder) || "ascending".equalsIgnoreCase(arrivalOrder))) {
-            throw new IllegalArgumentException(String.format("Invalid arrival order value '%s', must be either descending or ascending", arrivalOrder));
-        }
-        this.arrivalOrder = arrivalOrder;
+    public void setSortattribute(String sortattribute) {
+        this.sortattribute = sortattribute;
     }
 
-    public String getMetaName() {
-        return metaName;
+    public String getSortorder() {
+        return sortorder;
     }
 
-    public void setMetaName(String metaName) {
-        this.metaName = metaName;
+    public void setSortorder(String sortorder) {
+        this.sortorder = sortorder;
     }
 
-    public String getMetaValue() {
-        return metaValue;
+    public String getArrivalorder() {
+        return arrivalorder;
     }
 
-    public void setMetaValue(String metaValue) {
-        this.metaValue = metaValue;
+    public void setArrivalorder(String arrivalorder) {
+        this.arrivalorder = arrivalorder;
     }
 
     @Override
     public String toString() {
-        return "Filter{" +
-                "since=" + since +
-                ", noAck=" + noAck +
-                ", status=" + status +
+        return "MessageListConditions{" +
+                "since='" + since + '\'' +
+                ", filter='" + filter + '\'' +
+                ", status='" + status + '\'' +
                 ", originator='" + originator + '\'' +
-                ", endRecipient='" + endRecipient + '\'' +
-                ", corrId='" + corrId + '\'' +
-                ", contentId='" + contentId + '\'' +
-                ", maxHits=" + maxHits +
-                ", productIds=" + productIds +
-                ", metaName='" + metaName + '\'' +
-                ", metaValue='" + metaValue + '\'' +
-                ", sortAttribute='" + sortAttribute + '\'' +
-                ", sortOrder='" + sortOrder + '\'' +
-                ", arrivalOrder='" + arrivalOrder + '\'' +
+                ", endrecipient='" + endrecipient + '\'' +
+                ", corrid='" + corrid + '\'' +
+                ", contentid='" + contentid + '\'' +
+                ", maxhits=" + maxhits +
+                ", producttype='" + producttype + '\'' +
+                ", metaname='" + metaname + '\'' +
+                ", metavalue='" + metavalue + '\'' +
+                ", sortAttribute='" + sortattribute + '\'' +
+                ", sortorder='" + sortorder + '\'' +
+                ", arrivalorder='" + arrivalorder + '\'' +
                 '}';
     }
 
-    public enum SortOrder {
-        DESCENDING, ASCENDING;
-
-        private static List<String> DESCENDING_VALUES = Arrays.asList("desc", "descending");
-        private static List<String> ASCENDING_VALUES = Arrays.asList("asc", "ascending");
-
-        /**
-         * Returns the {@link SortOrder} enum for the given {@link String} value.
-         *
-         * @param value valid values are ascending, asc, descending, desc. The values are case insensitive.
-         *              <code>null</code> is valid.
-         * @throws IllegalArgumentException if the given value cannot be parsed into an enum value.
-         * @return the sort order, if the value is null ASCENDING is returned.
-         */
-        public static SortOrder fromString(String value) {
-            if (value == null) {
-                return ASCENDING;
-            }
-
-            String lowerCaseValue = value.toLowerCase(Locale.US);
-
-            if (DESCENDING_VALUES.contains(lowerCaseValue)) {
-                return DESCENDING;
-            } else if (ASCENDING_VALUES.contains(lowerCaseValue)) {
-                return ASCENDING;
-            } else {
-                throw new IllegalArgumentException(String.format(
-                        "Invalid sort order value '%s'! Has to be either 'desc', 'descending', 'asc', 'ascending' or null (case insensitive).", value));
-            }
+    public MessageListConditions copy() {
+        try {
+            return (MessageListConditions)this.clone();
+        } catch (Exception e) {
+            return null;
         }
     }
 }

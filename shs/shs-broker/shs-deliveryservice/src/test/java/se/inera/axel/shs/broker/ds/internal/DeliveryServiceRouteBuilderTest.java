@@ -28,7 +28,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.broker.messagestore.MessageLogService;
 import se.inera.axel.shs.broker.messagestore.ShsMessageEntry;
 import se.inera.axel.shs.mime.ShsMessage;
@@ -47,7 +46,7 @@ import static org.hamcrest.beans.HasPropertyWithValue.hasProperty;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
-import static se.inera.axel.shs.client.MessageListConditions.SortOrder.DESCENDING;
+import static se.inera.axel.shs.broker.messagestore.MessageLogService.Filter.SortOrder.DESCENDING;
 
 @ContextConfiguration
 public class DeliveryServiceRouteBuilderTest extends AbstractCamelTestNGSpringContextTests {
@@ -383,7 +382,7 @@ public class DeliveryServiceRouteBuilderTest extends AbstractCamelTestNGSpringCo
 
         verify(messageLogService).listMessages(
                 eq(ShsLabelMaker.DEFAULT_TEST_TO),
-                (MessageListConditions)argThat(
+                (MessageLogService.Filter)argThat(
                         allOf(hasProperty("noAck", is(true)),
                                 hasProperty("since", nullValue()))));
 
@@ -404,7 +403,7 @@ public class DeliveryServiceRouteBuilderTest extends AbstractCamelTestNGSpringCo
 
         verify(messageLogService).listMessages(
                 eq(ShsLabelMaker.DEFAULT_TEST_TO),
-                (MessageListConditions)argThat(
+                (MessageLogService.Filter)argThat(
                         allOf(hasProperty("noAck", is(false)),
                                 hasProperty("productIds",
                                         containsInAnyOrder("error", "confirm")),
