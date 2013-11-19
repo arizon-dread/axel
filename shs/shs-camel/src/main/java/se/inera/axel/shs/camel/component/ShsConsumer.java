@@ -86,22 +86,37 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
 
     protected boolean processExchange(final Exchange exchange) throws Exception {
 
+
         // TODO add task executor
 
         final Message message = exchange.getProperty(Message.class.getCanonicalName(), Message.class);
+        if (message == null) {
+            log.warn("no shs message registered on exchange property '{}' for fetching and processing",
+                    Message.class.getCanonicalName());
+            return false;
+        }
 
+        log.trace("scheduling shs message {} for fetching and processing", message.getTxId());
+
+        ShsMessage shsMessage;
+        try {
+            shsMessage = getShsClient().fetch(getEndpoint().getTo(), message.getTxId());
+        } catch (Exception e) {
+            log.error("error fetching message from shs server", e);
+            return false;
+        }
 
         try {
-            ShsMessage shsMessage = getShsClient().fetch(getEndpoint().getTo(), message.getTxId());
             exchange.getIn().setBody(shsMessage);
 
             // binding to convert from shs message to camel exchange.
             new DefaultShsMessageToCamelProcessor().process(exchange);
-
         } catch (Exception e) {
-            // TODO log exception
+            log.error("error converting shs message {} to camel message with binding {}", e,
+                    message.getTxId(), DefaultShsMessageToCamelProcessor.class.getCanonicalName());
             return false;
         }
+
 
         // send message to next processor in the route
         getAsyncProcessor().process(exchange, new AsyncCallback() {
@@ -110,16 +125,18 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
 
                 // TODO add shs error message creation
                 if (exchange.getException() != null) {
+
+
+
                     getExceptionHandler().handleException("Error processing exchange", exchange, exchange.getException());
                 } else {
                     try {
                         getShsClient().ack(getEndpoint().getTo(), message.getTxId());
                     } catch (Exception e) {
-                        // TODO add logging and handling
-                        e.printStackTrace();
+                        log.error("error acking shs message {} with server, although message is processed without errors", e,
+                                 message.getTxId());
                     }
                 }
-
             }
         });
 
@@ -130,27 +147,33 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
     protected int poll() throws Exception {
 
         ShsMessageList queryResult;
+        LinkedList exchanges = new LinkedList();
 
         try {
             queryResult = getShsClient().list(getEndpoint().getTo(), getEndpoint().getConditions());
-            LinkedList exchanges = new LinkedList();
-
-            for (Message message : queryResult.getMessage()) {
-                Exchange exchange = getEndpoint().createExchange();
-                exchange.setProperty(Message.class.getCanonicalName(), message);
-                exchanges.add(exchange);
-            }
-
-            // consume files one by one
-            int total = exchanges.size();
-            if (total > 0) {
-                log.debug("Total {} messages to consume", total);
-            }
-
-            return processBatch(exchanges);
-        } finally {
-            // log exception if an exception occurred and was not handled
+        } catch (Exception e) {
+            log.warn("polling shs server failed", e);
+            throw e;
         }
+
+        if (queryResult == null || queryResult.getMessage() == null) {
+            log.warn("unexpectedly no result polling shs server");
+            return 0;
+        }
+
+        for (Message message : queryResult.getMessage()) {
+            Exchange exchange = getEndpoint().createExchange();
+            exchange.setProperty(Message.class.getCanonicalName(), message);
+            exchanges.add(exchange);
+        }
+
+        int total = exchanges.size();
+        if (total == 0) {
+            return 0;
+        }
+
+        log.debug("Total {} messages to consume", total);
+        return processBatch(exchanges);
     }
 
 

@@ -45,22 +45,24 @@ public class ShsClient {
                 case HttpURLConnection.HTTP_ACCEPTED:
                 case HttpURLConnection.HTTP_OK:
 
+                    // should return nothing or an txId for example.
+                    String body = postMethod.getResponseBodyAsString(1024);
+
                     Header header = postMethod.getResponseHeader(ShsHeaders.X_SHS_TXID);
+
                     String txId;
 
                     if (header == null) {
-                        return null;
+                        return body;
                     } else {
-                        txId = header.getValue();
+                        return header.getValue();
                     }
-
-                    return txId;
 
                 default:
 
                     String message = String.format("HTTP status code %d (%s): %s ",
                             postMethod.getStatusCode(), postMethod.getStatusText(),
-                            postMethod.getResponseBodyAsString());
+                            postMethod.getResponseBodyAsString(1024*1024));
 
                     MissingDeliveryExecutionException e = new MissingDeliveryExecutionException(message);
                     e.setContentId(shsMessage.getLabel().getContent().getContentId());
@@ -87,22 +89,21 @@ public class ShsClient {
                 case HttpURLConnection.HTTP_ACCEPTED:
                 case HttpURLConnection.HTTP_OK:
 
-                    InputStream responseBody = postMethod.getResponseBodyAsStream();
-                    final ShsMessageMarshaller marshaller = new ShsMessageMarshaller();
+                    ShsMessageMarshaller marshaller = new ShsMessageMarshaller();
 
-                    ShsMessage shsReply = marshaller.unmarshal(responseBody);
-
-                    return shsReply;
+                    try (InputStream responseStream = postMethod.getResponseBodyAsStream()) {
+                        return marshaller.unmarshal(responseStream);
+                    }
 
                 case HttpURLConnection.HTTP_NO_CONTENT:
-                    postMethod.getResponseBodyAsString();
+                    postMethod.getResponseBodyAsString(1024);
                     return null;
 
                 default:
 
                     String message = String.format("HTTP status code %d (%s): %s",
                             postMethod.getStatusCode(), postMethod.getStatusText(),
-                            postMethod.getResponseBodyAsString());
+                            postMethod.getResponseBodyAsString(1024*1024));
                     MissingDeliveryExecutionException e = new MissingDeliveryExecutionException(message);
                     e.setContentId(shsMessage.getLabel().getContent().getContentId());
                     e.setCorrId(shsMessage.getLabel().getCorrId());
@@ -130,13 +131,16 @@ public class ShsClient {
             switch (statusCode) {
                 case HttpURLConnection.HTTP_OK:
 
-                    ShsMessageListMarshaller m = new ShsMessageListMarshaller();
-                    return m.unmarshal(getMethod.getResponseBodyAsString());
+                    ShsMessageListMarshaller marshaller = new ShsMessageListMarshaller();
+
+                    try (InputStream responseStream = getMethod.getResponseBodyAsStream()) {
+                        return marshaller.unmarshal(responseStream);
+                    }
 
                 default:
                     String message = String.format("HTTP status code %d (%s): %s",
                             getMethod.getStatusCode(), getMethod.getStatusText(),
-                            getMethod.getResponseBodyAsString());
+                            getMethod.getResponseBodyAsString(1024*1024));
 
                     throw new HttpException(message);
             }
@@ -219,13 +223,15 @@ public class ShsClient {
             switch (statusCode) {
                 case HttpURLConnection.HTTP_OK:
 
-                    ShsMessageMarshaller m = new ShsMessageMarshaller();
-                    return m.unmarshal(getMethod.getResponseBodyAsStream());
+                    ShsMessageMarshaller marshaller = new ShsMessageMarshaller();
+                    try (InputStream responseStream = getMethod.getResponseBodyAsStream()) {
+                        return marshaller.unmarshal(responseStream);
+                    }
 
                 default:
                     String message = String.format("HTTP status code %d (%s): %s",
                             getMethod.getStatusCode(), getMethod.getStatusText(),
-                            getMethod.getResponseBodyAsString());
+                            getMethod.getResponseBodyAsString(1024*1024));
 
                     throw new HttpException(message);
             }
@@ -257,13 +263,14 @@ public class ShsClient {
             switch (statusCode) {
                 case HttpURLConnection.HTTP_OK:
 
-                    postMethod.getResponseBody();
+                    // should return nothing
+                    postMethod.getResponseBody(1024);
                     break;
 
                 default:
                     String message = String.format("HTTP status code %d (%s): %s",
                             postMethod.getStatusCode(), postMethod.getStatusText(),
-                            postMethod.getResponseBodyAsString());
+                            postMethod.getResponseBodyAsString(1024*1024));
 
                     throw new HttpException(message);
             }

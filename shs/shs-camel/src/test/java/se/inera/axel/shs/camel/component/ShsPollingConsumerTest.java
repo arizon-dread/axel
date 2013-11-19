@@ -58,12 +58,17 @@ public class ShsPollingConsumerTest extends CamelTestSupport {
 			
 			@Override
 			public void configure() throws Exception {
-				
-				from("shs:client?to=0000000000.jmeter&status=test&producttype=00000000-0000-0000-0000-000000000000")
-                .to("log:se.inera.axel.ShsPollingConsumerTest?showAll=true")
-                .to("file:/tmp/out")
-				.to("mock:result");
+//
+//				from("shs:client?to=0000000000.jmeter&status=test&producttype=00000000-0000-0000-0000-000000000000")
+//                .to("log:se.inera.axel.ShsPollingConsumerTest?showAll=true")
+//                .to("file:/tmp/out")
+//				.to("mock:result");
 
+
+                from("shs:client?to=0000000000.jmeter&status=test&producttype=confirm")
+                                .to("log:se.inera.axel.ShsPollingConsumerTest?showAll=true")
+                                .to("file:/tmp/out/confirms")
+                				.to("mock:result");
 			}
 		};
 
