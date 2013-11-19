@@ -18,12 +18,12 @@
  */
 package se.inera.axel.shs.processor;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 public class DtdEntityResolver implements EntityResolver {
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DtdEntityResolver.class);
@@ -36,10 +36,9 @@ public class DtdEntityResolver implements EntityResolver {
 	public InputSource resolveEntity(String publicId, String systemId)
 			throws SAXException, IOException {
 		
-		log.debug("resolveEntity({}, {})", publicId, systemId);
+		log.trace("resolveEntity({}, {})", publicId, systemId);
 		
         try {          
-        	// TODO fix so that this works correctly in Karaf
         	InputStream in = getClass().getResourceAsStream(DTD_LOCATION + getFilename(systemId));
         	
         	if (in != null) {
