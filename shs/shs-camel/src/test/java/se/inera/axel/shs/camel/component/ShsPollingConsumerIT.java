@@ -19,6 +19,8 @@
 package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.EndpointInject;
+import org.apache.camel.Exchange;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.JndiRegistry;
@@ -29,7 +31,7 @@ import org.testng.annotations.Test;
 import se.inera.axel.shs.client.ShsClient;
 
 @ContextConfiguration
-public class ShsPollingConsumerTest extends CamelTestSupport {
+public class ShsPollingConsumerIT extends CamelTestSupport {
 //	@Produce(uri = "direct:start")
 //	ProducerTemplate producer;
 //
@@ -58,25 +60,37 @@ public class ShsPollingConsumerTest extends CamelTestSupport {
 			
 			@Override
 			public void configure() throws Exception {
-//
-//				from("shs:client?to=0000000000.jmeter&status=test&producttype=00000000-0000-0000-0000-000000000000")
-//                .to("log:se.inera.axel.ShsPollingConsumerTest?showAll=true")
-//                .to("file:/tmp/out")
-//				.to("mock:result");
+
+				from("shs:client?to=0000000000.jmeter&status=test&producttype=00000000-0000-0000-0000-000000000000")
+                .to("log:se.inera.axel.ShsPollingConsumerIT?showAll=true")
+                .process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        throw new RuntimeException("nu vart det error in batch index " + exchange.getProperty(Exchange.BATCH_INDEX));
+                    }
+                })
+                .to("file:/tmp/out")
+                .to("mock:result");
 
 
                 from("shs:client?to=0000000000.jmeter&status=test&producttype=confirm")
-                                .to("log:se.inera.axel.ShsPollingConsumerTest?showAll=true")
+                                .to("log:se.inera.axel.ShsPollingConsumerIT?showAll=true")
                                 .to("file:/tmp/out/confirms")
                 				.to("mock:result");
-			}
+
+                from("shs:client?to=0000000000.jmeter&status=test&producttype=error")
+                        .to("log:se.inera.axel.ShsPollingConsumerIT?showAll=true")
+                        .to("file:/tmp/out/errors")
+                        .to("mock:result");
+
+            }
 		};
 
 
 	}
 	
 	@DirtiesContext
-	@Test(enabled = true)
+	@Test(enabled = false)
 	public void testShouldThrowException() throws Exception {
 
 //        resultEndpoint.assertIsSatisfied(1000);

@@ -16,34 +16,28 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-package se.inera.axel.shs.camel.component;
-
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.assertEquals;
+package se.inera.axel.shs.broker.rs.internal;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
-import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import se.inera.axel.shs.camel.AbstractShsTestNGTests;
 import se.inera.axel.shs.mime.ShsMessage;
+import se.inera.axel.shs.mime.ShsMessageTestObjectMother;
 import se.inera.axel.shs.xml.label.SequenceType;
 
-@ContextConfiguration(locations="classpath*:se.inera.axel.shs.camel.AbstractShsTestNGTests-context.xml")
-public class DefaultShsExceptionHandlerTest extends AbstractShsTestNGTests {
+import static org.testng.Assert.*;
+
+public class ShsSubProcessorExceptionHandlerTest {
 	private CamelContext camelContext;
 	private Exchange inExchange;
 	private Exchange returnedExchange;
 	
 	@Test
 	public void isExceptionShouldReturnTrueWhenBodyIsNotAnShsMessage() {
-		DefaultShsExceptionHandler exceptionHandler = new DefaultShsExceptionHandler();
+		ShsSubProcessor.ExceptionHandler exceptionHandler = new ShsSubProcessor.ExceptionHandler();
 		exceptionHandler.setReturnError(false);
 		
 		returnedExchange.getIn().setBody("Not an ShsMessage");
@@ -55,7 +49,7 @@ public class DefaultShsExceptionHandlerTest extends AbstractShsTestNGTests {
 	
 	@Test
 	public void isExceptionShouldReturnTrueWhenAnExceptionHasBeenSet() {
-		DefaultShsExceptionHandler exceptionHandler = new DefaultShsExceptionHandler();
+		ShsSubProcessor.ExceptionHandler exceptionHandler = new ShsSubProcessor.ExceptionHandler();
 		exceptionHandler.setReturnError(false);
 
 		returnedExchange.getIn().setBody(createTestMessage());
@@ -68,7 +62,7 @@ public class DefaultShsExceptionHandlerTest extends AbstractShsTestNGTests {
 
 	@Test
 	public void isExceptionShouldReturnFalseWhenBodyIsAnShsMessageAndNoExceptionHasBeenSet() {
-		DefaultShsExceptionHandler exceptionHandler = new DefaultShsExceptionHandler();
+		ShsSubProcessor.ExceptionHandler exceptionHandler = new ShsSubProcessor.ExceptionHandler();
 		exceptionHandler.setReturnError(false);
 
 		returnedExchange.getIn().setBody(createTestMessage());
@@ -80,7 +74,7 @@ public class DefaultShsExceptionHandlerTest extends AbstractShsTestNGTests {
 	
 	//@Test
 	public void handleExceptionShouldSetExceptionIfReturnedBodyIsNotShsMessage() {
-		DefaultShsExceptionHandler exceptionHandler = new DefaultShsExceptionHandler();
+		ShsSubProcessor.ExceptionHandler exceptionHandler = new ShsSubProcessor.ExceptionHandler();
 		exceptionHandler.setReturnError(false);
 		
 		inExchange.getIn().setBody("Not an ShsMessage");
@@ -93,7 +87,7 @@ public class DefaultShsExceptionHandlerTest extends AbstractShsTestNGTests {
 
 	@Test
 	public void handleExceptionShouldSetExceptionIfAnExceptionIsSetOnTheExchange() {
-		DefaultShsExceptionHandler exceptionHandler = new DefaultShsExceptionHandler();
+		ShsSubProcessor.ExceptionHandler exceptionHandler = new ShsSubProcessor.ExceptionHandler();
 		exceptionHandler.setReturnError(false);
 		
 		ShsMessage message = createTestMessage();
@@ -108,7 +102,7 @@ public class DefaultShsExceptionHandlerTest extends AbstractShsTestNGTests {
 	
 	@Test
 	public void handleExceptionShouldSendBackAnShsError() {
-		DefaultShsExceptionHandler exceptionHandler = new DefaultShsExceptionHandler();
+		ShsSubProcessor.ExceptionHandler exceptionHandler = new ShsSubProcessor.ExceptionHandler();
 		exceptionHandler.setReturnError(true);
 		
 		ShsMessage message = createTestMessage();
@@ -128,5 +122,10 @@ public class DefaultShsExceptionHandlerTest extends AbstractShsTestNGTests {
 		inExchange = new DefaultExchange(camelContext);
 		returnedExchange = new DefaultExchange(camelContext);
 	}
-	
+
+
+    public ShsMessage createTestMessage() {
+        return ShsMessageTestObjectMother.createTestMessage();
+    }
+
 }

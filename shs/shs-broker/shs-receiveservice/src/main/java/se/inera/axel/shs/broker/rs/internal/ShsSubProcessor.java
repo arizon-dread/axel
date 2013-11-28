@@ -101,101 +101,101 @@ public class ShsSubProcessor implements Processor {
 			return returnedExchange.getIn().getBody();
 		}
 	}
-}
 
-class ExceptionHandler {
-    private static final Logger log = LoggerFactory.getLogger(ExceptionHandler.class);
+    static class ExceptionHandler {
+        private static final Logger log = LoggerFactory.getLogger(ExceptionHandler.class);
 
-    private boolean isReturnError = false;
+        private boolean isReturnError = false;
 
-    ResponseMessageBuilder responseMessageBuilder = new ResponseMessageBuilder();
+        ResponseMessageBuilder responseMessageBuilder = new ResponseMessageBuilder();
 
-    public boolean isReturnError() {
-        return isReturnError;
-    }
-
-    public void setReturnError(boolean isReturnError) {
-        this.isReturnError = isReturnError;
-    }
-
-    public void handleException(final Exchange inExchange, final Exchange returnedExchange) {
-
-        ShsLabel label = null;
-        ShsMessage shsMessage = inExchange.getContext().getTypeConverter().tryConvertTo(ShsMessage.class, inExchange, inExchange.getIn().getBody());
-
-        if (shsMessage != null)
-            label = shsMessage.getLabel();
-
-        if (label == null)
-            label = inExchange.getProperty(ShsHeaders.LABEL, ShsLabel.class);
-
-        if (hasException(returnedExchange)) {
-            createResponse(inExchange, createOrEnrichShsException(returnedExchange, label));
+        public boolean isReturnError() {
+            return isReturnError;
         }
-    }
 
-    private ShsException createOrEnrichShsException(Exchange returnedExchange, ShsLabel label) {
+        public void setReturnError(boolean isReturnError) {
+            this.isReturnError = isReturnError;
+        }
 
-        ShsException shsException = returnedExchange.getException(ShsException.class);
+        public void handleException(final Exchange inExchange, final Exchange returnedExchange) {
 
-        if (shsException == null) {
-            IOException ioException = returnedExchange.getException(IOException.class);
+            ShsLabel label = null;
+            ShsMessage shsMessage = inExchange.getContext().getTypeConverter().tryConvertTo(ShsMessage.class, inExchange, inExchange.getIn().getBody());
 
-            if (ioException != null) {
-                shsException = new MissingDeliveryExecutionException(ioException);
+            if (shsMessage != null)
+                label = shsMessage.getLabel();
+
+            if (label == null)
+                label = inExchange.getProperty(ShsHeaders.LABEL, ShsLabel.class);
+
+            if (hasException(returnedExchange)) {
+                createResponse(inExchange, createOrEnrichShsException(returnedExchange, label));
             }
         }
 
-        if (shsException == null) {
-            Exception exception = returnedExchange.getException(Exception.class);
-            shsException = new OtherErrorException(exception);
-        }
+        private ShsException createOrEnrichShsException(Exchange returnedExchange, ShsLabel label) {
 
-        if (label != null) {
-            if (StringUtils.isBlank(shsException.getContentId()) && label.getContent() != null) {
-                shsException.setContentId(label.getContent().getContentId());
+            ShsException shsException = returnedExchange.getException(ShsException.class);
+
+            if (shsException == null) {
+                IOException ioException = returnedExchange.getException(IOException.class);
+
+                if (ioException != null) {
+                    shsException = new MissingDeliveryExecutionException(ioException);
+                }
             }
 
-            if (StringUtils.isBlank(shsException.getCorrId())) {
-                shsException.setCorrId(label.getCorrId());
+            if (shsException == null) {
+                Exception exception = returnedExchange.getException(Exception.class);
+                shsException = new OtherErrorException(exception);
+            }
+
+            if (label != null) {
+                if (StringUtils.isBlank(shsException.getContentId()) && label.getContent() != null) {
+                    shsException.setContentId(label.getContent().getContentId());
+                }
+
+                if (StringUtils.isBlank(shsException.getCorrId())) {
+                    shsException.setCorrId(label.getCorrId());
+                }
+            }
+
+            return shsException;
+        }
+
+        private void createResponse(final Exchange inExchange,
+                                    ShsException shsException) {
+            if (isReturnError()) {
+                inExchange.getIn().setBody(responseMessageBuilder.buildErrorMessage(inExchange.getIn().getBody(ShsMessage.class), shsException));
+            } else {
+                inExchange.setException(shsException);
             }
         }
 
-        return shsException;
-    }
+        public boolean isException(Exchange returnedExchange) {
+            if (hasException(returnedExchange))
+                return true;
 
-    private void createResponse(final Exchange inExchange,
-                                ShsException shsException) {
-        if (isReturnError()) {
-            inExchange.getIn().setBody(responseMessageBuilder.buildErrorMessage(inExchange.getIn().getBody(ShsMessage.class), shsException));
-        } else {
-            inExchange.setException(shsException);
+            if (!isShsMessage(returnedExchange))
+                return true;
+
+            return false;
         }
-    }
 
-    public boolean isException(Exchange returnedExchange) {
-        if (hasException(returnedExchange))
-            return true;
+        private boolean isShsMessage(Exchange returnedExchange) {
+            return getBody(returnedExchange) instanceof ShsMessage;
+        }
 
-        if (!isShsMessage(returnedExchange))
-            return true;
+        private boolean hasException(Exchange returnedExchange) {
+            return returnedExchange.getException() != null;
+        }
 
-        return false;
-    }
-
-    private boolean isShsMessage(Exchange returnedExchange) {
-        return getBody(returnedExchange) instanceof ShsMessage;
-    }
-
-    private boolean hasException(Exchange returnedExchange) {
-        return returnedExchange.getException() != null;
-    }
-
-    private Object getBody(Exchange exchange) {
-        if (exchange.hasOut()) {
-            return exchange.getOut().getBody();
-        } else {
-            return exchange.getIn().getBody();
+        private Object getBody(Exchange exchange) {
+            if (exchange.hasOut()) {
+                return exchange.getOut().getBody();
+            } else {
+                return exchange.getIn().getBody();
+            }
         }
     }
 }

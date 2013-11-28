@@ -40,7 +40,7 @@ import java.util.Map;
 import static se.inera.axel.shs.mime.ShsMessageTestObjectMother.*;
 
 @ContextConfiguration
-public class ShsComponentTest extends CamelTestSupport {
+public class ShsComponentIT extends CamelTestSupport {
 //	@Produce(uri = "direct:start")
 //	ProducerTemplate producer;
 //

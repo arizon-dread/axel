@@ -23,6 +23,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.impl.ScheduledBatchPollingConsumer;
 import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
+import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.xml.message.Message;
@@ -32,12 +33,36 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * Camel SHS Message producer.
+ * A polling Camel SHS Message consumer that polls an SHS server for new (asynchronous) messages.
+ * <p/>
+ *
+ * This consumer executes this loop:
+ * <ol>
+ *     <li>{@link ShsClient#list(String, se.inera.axel.shs.client.MessageListConditions)} with the given criteria (called conditions) to get a list of messages.</li>
+ *     <li>For each message do:
+ *          <ol>
+ *              <li>{@link ShsClient#fetch(String, String)} a message based on txId</li>
+ *              <li>Convert the shs message using a "binding" to a normalized camel message</li>
+ *              <li>Send it out in the camel pipeline using a newly created camel exchange.</li>
+ *              <li>When exchange completes:
+ *                  <ul>
+ *                      <li>without errors: Ack the message using {@link ShsClient#ack(String, String)}</li>
+ *                      <li>with errors: Create an shs error message and send it back to the server using {@link ShsClient#send(se.inera.axel.shs.mime.ShsMessage)} </li>
+ *                  </ul>
+ *               </li>
+ *          </ol>
+ *     </li>
+ * </ol>
+ *
+ *
+ *
+ *
  */
-public class ShsConsumer extends ScheduledBatchPollingConsumer {
+public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
+    MessageListConditions conditions;
 
 
-    public ShsConsumer(ShsEndpoint endpoint, Processor processor) {
+    public ShsPollingConsumer(ShsEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
     }
 
@@ -89,12 +114,15 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
 
         // TODO add task executor
 
+        /* which shs message we deal with is specified in an exchange property */
         final Message message = exchange.getProperty(Message.class.getCanonicalName(), Message.class);
         if (message == null) {
             log.warn("no shs message registered on exchange property '{}' for fetching and processing",
                     Message.class.getCanonicalName());
             return false;
         }
+
+        /* fetch the message from the server given the txId */
 
         log.trace("scheduling shs message {} for fetching and processing", message.getTxId());
 
@@ -106,41 +134,39 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
             return false;
         }
 
+
+        /* convert the shs message to a camel normalized message using some 'binding' converter */
         try {
             exchange.getIn().setBody(shsMessage);
 
             // binding to convert from shs message to camel exchange.
             new DefaultShsMessageToCamelProcessor().process(exchange);
         } catch (Exception e) {
-            log.error("error converting shs message {} to camel message with binding {}", e,
-                    message.getTxId(), DefaultShsMessageToCamelProcessor.class.getCanonicalName());
+            log.error("error converting shs message '" + message.getTxId() + "' to camel message", e);
             return false;
         }
 
 
-        // send message to next processor in the route
+        /* send the normalized message to the next processor in the route */
         getAsyncProcessor().process(exchange, new AsyncCallback() {
             @Override
             public void done(boolean doneSync) {
 
-                // TODO add shs error message creation
                 if (exchange.getException() != null) {
-
-
-
                     getExceptionHandler().handleException("Error processing exchange", exchange, exchange.getException());
                 } else {
                     try {
                         getShsClient().ack(getEndpoint().getTo(), message.getTxId());
                     } catch (Exception e) {
-                        log.error("error acking shs message {} with server, although message is processed without errors", e,
-                                 message.getTxId());
+                        log.error("error acking shs message " + message.getTxId() + " with server,"
+                                + " although message is fetched and processed without errors", e);
                     }
                 }
             }
         });
 
-        return true;
+        /* return true if done sync or false if async, right now something in between. */
+        return false;
     }
 
     @Override
@@ -149,15 +175,10 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
         ShsMessageList queryResult;
         LinkedList exchanges = new LinkedList();
 
-        try {
-            queryResult = getShsClient().list(getEndpoint().getTo(), getEndpoint().getConditions());
-        } catch (Exception e) {
-            log.warn("polling shs server failed", e);
-            throw e;
-        }
+        queryResult = getShsClient().list(getEndpoint().getTo(), getConditions());
 
         if (queryResult == null || queryResult.getMessage() == null) {
-            log.warn("unexpectedly no result polling shs server");
+            log.warn("faulty (empty) response polling shs server");
             return 0;
         }
 
@@ -168,17 +189,28 @@ public class ShsConsumer extends ScheduledBatchPollingConsumer {
         }
 
         int total = exchanges.size();
+
+        log.debug("Total {} messages to consume from {}", total, getEndpoint().getEndpointUri());
+
         if (total == 0) {
             return 0;
         }
 
-        log.debug("Total {} messages to consume", total);
         return processBatch(exchanges);
     }
 
 
     public ShsClient getShsClient() {
         return getEndpoint().getClient();
+    }
+
+
+    public MessageListConditions getConditions() {
+        return conditions;
+    }
+
+    public void setConditions(MessageListConditions conditions) {
+        this.conditions = conditions;
     }
 
 }

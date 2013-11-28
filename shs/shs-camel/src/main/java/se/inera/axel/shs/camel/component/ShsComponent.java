@@ -37,32 +37,15 @@ public class ShsComponent extends DefaultComponent {
 
         setProperties(shsClient, parameters);
 
-        ShsEndpoint endpoint = new ShsEndpoint(uri, this, shsClient);
-        setProperties(endpoint, parameters);
-
-        ShsExceptionHandler exceptionHandler =
-                getAndRemoveParameter(parameters, "exceptionHandler", ShsExceptionHandler.class);
-        if (exceptionHandler == null) {
-        	exceptionHandler = new DefaultShsExceptionHandler();
-        }
-        setProperties(exceptionHandler, parameters);
-        
-        endpoint.setExceptionHandler(exceptionHandler);
-
-        MessageListConditions conditions =
-                resolveAndRemoveReferenceParameter(parameters, "conditions", MessageListConditions.class);
-        if (conditions == null) {
-            conditions = new MessageListConditions();
-        } else {
-            conditions = conditions.copy();
-        }
-
-        endpoint.setConditions(conditions);
-//        Map<String, Object> filterProperties = IntrospectionSupport.extractProperties(parameters, "filter.");
-        setProperties(conditions, parameters);
-
+        ShsEndpoint endpoint = new ShsEndpoint(uri, this, shsClient, parameters);
 
         return endpoint;
     }
+
+    @Override
+    public void setProperties(Object bean, Map<String, Object> parameters) throws Exception {
+        super.setProperties(bean, parameters);
+    }
+
 
 }

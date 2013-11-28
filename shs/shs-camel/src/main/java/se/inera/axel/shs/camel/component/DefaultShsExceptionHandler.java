@@ -19,115 +19,103 @@
 package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.TypeConversionException;
+import org.apache.camel.spi.ExceptionHandler;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.exception.MissingDeliveryExecutionException;
 import se.inera.axel.shs.exception.OtherErrorException;
 import se.inera.axel.shs.exception.ShsException;
+import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ResponseMessageBuilder;
 import se.inera.axel.shs.processor.ShsHeaders;
-import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.xml.label.ShsLabel;
 
-import javax.xml.bind.TypeConstraintException;
 import java.io.IOException;
 
-public class DefaultShsExceptionHandler implements ShsExceptionHandler {
-	private static final Logger log = LoggerFactory.getLogger(DefaultShsExceptionHandler.class);
-	
-	private boolean isReturnError = false;
-	
-	ResponseMessageBuilder responseMessageBuilder = new ResponseMessageBuilder();
-	
-	public boolean isReturnError() {
-		return isReturnError;
-	}
+/**
+ * This exception handler converts an exception (on an exchange) to an {@link ShsException} and sends it
+ * back to the sender of the original message using the provided {@link ShsClient}.
+ *
+ * @author Björn Bength
+ */
+public class DefaultShsExceptionHandler implements ExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(DefaultShsExceptionHandler.class);
 
-	public void setReturnError(boolean isReturnError) {
-		this.isReturnError = isReturnError;
-	}
+    ResponseMessageBuilder responseMessageBuilder = new ResponseMessageBuilder();
+    ShsClient client;
 
-	public void handleException(final Exchange inExchange, final Exchange returnedExchange) {
-
-		ShsLabel label = null;
-        ShsMessage shsMessage = inExchange.getContext().getTypeConverter().tryConvertTo(ShsMessage.class, inExchange, inExchange.getIn().getBody());
-
-		if (shsMessage != null)
-			label = shsMessage.getLabel();
-
-		if (label == null)
-			label = inExchange.getProperty(ShsHeaders.LABEL, ShsLabel.class);
-
-		if (hasException(returnedExchange)) {
-			createResponse(inExchange, createOrEnrichShsException(returnedExchange, label));
-		}
+    public DefaultShsExceptionHandler(ShsClient client) {
+        this.client = client;
     }
 
-	private ShsException createOrEnrichShsException(Exchange returnedExchange, ShsLabel label) {
+    @Override
+    public void handleException(Throwable exception) {
+        handleException("Exception occurred during process of message", exception);
+    }
 
-		ShsException shsException = returnedExchange.getException(ShsException.class);
+    @Override
+    public void handleException(String message, Throwable exception) {
+        log.error(message, exception);
+    }
 
-		if (shsException == null) {
-			IOException ioException = returnedExchange.getException(IOException.class);
+    @Override
+    public void handleException(String message, Exchange exchange, Throwable exception) {
 
-			if (ioException != null) {
-				shsException = new MissingDeliveryExecutionException(ioException);
-			}
-		}
+        log.error(message, exception);
 
-		if (shsException == null) {
-			Exception exception = returnedExchange.getException(Exception.class);
-			shsException = new OtherErrorException(exception);
-		}
+        ShsLabel label = exchange.getProperty(ShsHeaders.LABEL, ShsLabel.class);
+        if (label == null) {
+            log.warn("Original SHS Label was not found on camel exchange, cannot continue");
+            return;
+        }
 
-		if (label != null) {
-			if (StringUtils.isBlank(shsException.getContentId()) && label.getContent() != null) {
-				shsException.setContentId(label.getContent().getContentId());
-			}
-			
-			if (StringUtils.isBlank(shsException.getCorrId())) {
-				shsException.setCorrId(label.getCorrId());
-			}
-		}
-		
-		return shsException;
-	}
+        log.debug("Creating an shs error message from original message with corrId=" + label.getCorrId() +
+                " to send back to the original sender (" + label.getFrom().getValue() + ")");
 
-	private void createResponse(final Exchange inExchange,
-			ShsException shsException) {
-		if (isReturnError()) {
-			inExchange.getIn().setBody(responseMessageBuilder.buildErrorMessage(inExchange.getIn().getBody(ShsMessage.class), shsException));
-		} else {
-			inExchange.setException(shsException);
-		}
-	}
+        ShsException shsException = createOrEnrichShsException(exchange, label);
 
-	@Override
-	public boolean isException(Exchange returnedExchange) {
-		if (hasException(returnedExchange))
-			return true;
-		
-		if (!isShsMessage(returnedExchange))
-			return true;
-		
-		return false;
-	}
+        ShsMessage errorMessage = responseMessageBuilder.buildErrorMessage(label, shsException);
+        try {
+            client.send(errorMessage);
+        } catch (Exception e) {
+            ShsLabel errorLabel = errorMessage.getLabel();
 
-	private boolean isShsMessage(Exchange returnedExchange) {
-		return getBody(returnedExchange) instanceof ShsMessage;
-	}
+            log.error("Error sending shs error message with txId=" + errorLabel.getTxId() +
+                    " back to the original sender (" + errorLabel.getTo().getValue() + ")" +
+                    " regarding message with corrId=" + label.getCorrId(), e);
+        }
+    }
 
-	private boolean hasException(Exchange returnedExchange) {
-		return returnedExchange.getException() != null;
-	}
-	
-	private Object getBody(Exchange exchange) {
-		if (exchange.hasOut()) {
-			return exchange.getOut().getBody();
-		} else {
-			return exchange.getIn().getBody();
-		}
-	}
+    private ShsException createOrEnrichShsException(Exchange exchange, ShsLabel label) {
+
+        ShsException shsException = exchange.getException(ShsException.class);
+
+        if (shsException == null) {
+            IOException ioException = exchange.getException(IOException.class);
+
+            if (ioException != null) {
+                shsException = new MissingDeliveryExecutionException(ioException);
+            }
+        }
+
+        if (shsException == null) {
+            Exception exception = exchange.getException(Exception.class);
+            shsException = new OtherErrorException(exception);
+        }
+
+        if (label != null) {
+            if (StringUtils.isBlank(shsException.getContentId()) && label.getContent() != null) {
+                shsException.setContentId(label.getContent().getContentId());
+            }
+
+            if (StringUtils.isBlank(shsException.getCorrId())) {
+                shsException.setCorrId(label.getCorrId());
+            }
+        }
+
+        return shsException;
+    }
+
 }
