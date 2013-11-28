@@ -2,6 +2,7 @@ package se.inera.axel.shs.client;
 
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -28,6 +29,9 @@ public class ShsClient {
 
     public ShsClient() {
         this.httpClient = new HttpClient();
+        MultiThreadedHttpConnectionManager connectionManager =
+                new MultiThreadedHttpConnectionManager();
+        httpClient.setHttpConnectionManager(connectionManager);
     }
 
 
