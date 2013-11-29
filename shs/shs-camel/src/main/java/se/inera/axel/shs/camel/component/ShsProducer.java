@@ -42,27 +42,15 @@ public class ShsProducer extends DefaultProducer {
     }
 
     @Override
-    public ShsEndpoint getEndpoint() {
-        return (ShsEndpoint)super.getEndpoint();
-    }
-
-    @Override
     public void process(final Exchange exchange) throws Exception {
 
-        ShsMessage shsMessage;
-
-        Object body = exchange.getIn().getBody();
-        if (body instanceof ShsMessage) {
-            shsMessage = (ShsMessage)body;
-        } else {
-            new DefaultCamelToShsMessageProcessor().process(exchange);
-            shsMessage = exchange.getIn().getBody(ShsMessage.class);
-        }
+        ShsMessage shsMessage = getEndpoint().getShsMessageBinding().toShsMessage(exchange);
 
         if (shsMessage == null || shsMessage.getLabel() == null) {
             throw new IllegalMessageStructureException("Camel exchange can not be evaluated as an ShsMessage");
         }
 
+        // TODO look at exchange pattern or shs message transfertype??
         switch (shsMessage.getLabel().getTransferType()) {
             case ASYNCH:
                 doAsynchSend(exchange, shsMessage);
@@ -93,6 +81,11 @@ public class ShsProducer extends DefaultProducer {
         new DefaultShsMessageToCamelProcessor().process(exchange);
     }
 
+
+    @Override
+    public ShsEndpoint getEndpoint() {
+        return (ShsEndpoint)super.getEndpoint();
+    }
 
     public ShsClient getShsClient() {
         return getEndpoint().getClient();

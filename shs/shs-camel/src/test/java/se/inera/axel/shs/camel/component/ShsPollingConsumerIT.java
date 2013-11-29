@@ -29,6 +29,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.Test;
 import se.inera.axel.shs.client.ShsClient;
+import se.inera.axel.shs.processor.ShsHeaders;
 
 @ContextConfiguration
 public class ShsPollingConsumerIT extends CamelTestSupport {
@@ -66,9 +67,10 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
                 .process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
-                        throw new RuntimeException("nu vart det error in batch index " + exchange.getProperty(Exchange.BATCH_INDEX));
+                     //   throw new RuntimeException("nu vart det error in batch index " + exchange.getProperty(Exchange.BATCH_INDEX));
                     }
                 })
+                .setHeader(Exchange.FILE_NAME, header(ShsHeaders.TXID))
                 .to("file:/tmp/out")
                 .to("mock:result");
 
@@ -90,7 +92,7 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
 	}
 	
 	@DirtiesContext
-	@Test(enabled = false)
+	@Test(enabled = true)
 	public void testShouldThrowException() throws Exception {
 
 //        resultEndpoint.assertIsSatisfied(1000);

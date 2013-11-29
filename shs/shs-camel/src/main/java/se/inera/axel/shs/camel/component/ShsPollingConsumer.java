@@ -26,6 +26,7 @@ import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
 import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.mime.ShsMessage;
+import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.message.Message;
 import se.inera.axel.shs.xml.message.ShsMessageList;
 
@@ -64,11 +65,6 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
 
     public ShsPollingConsumer(ShsEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
-    }
-
-    @Override
-    public ShsEndpoint getEndpoint() {
-        return (ShsEndpoint)super.getEndpoint();
     }
 
     @Override
@@ -137,10 +133,9 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
 
         /* convert the shs message to a camel normalized message using some 'binding' converter */
         try {
-            exchange.getIn().setBody(shsMessage);
-
             // binding to convert from shs message to camel exchange.
-            new DefaultShsMessageToCamelProcessor().process(exchange);
+            getEndpoint().getShsMessageBinding().fromShsMessage(shsMessage, exchange);
+            exchange.setProperty(ShsHeaders.LABEL, shsMessage.getLabel());
         } catch (Exception e) {
             log.error("error converting shs message '" + message.getTxId() + "' to camel message", e);
             return false;
@@ -199,6 +194,11 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
         return processBatch(exchanges);
     }
 
+
+    @Override
+    public ShsEndpoint getEndpoint() {
+        return (ShsEndpoint)super.getEndpoint();
+    }
 
     public ShsClient getShsClient() {
         return getEndpoint().getClient();
