@@ -2,56 +2,47 @@ package se.inera.axel.shs.camel;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import se.inera.axel.shs.exception.IllegalMessageStructureException;
 import se.inera.axel.shs.mime.DataPart;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.xml.label.ShsLabel;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class SimpleShsMessageBinding extends ShsMessageBinding {
 
+
+    /**
+     * Converts the camel message body to a data part using the {@link ShsDataPartBinding} of the super class.
+     *
+     * @param exchange
+     * @return
+     * @throws Exception
+     */
     @Override
-    public ShsMessage toShsMessage(Exchange exchange) throws Exception  {
+    protected List<DataPart> extractDataParts(Exchange exchange) throws Exception {
+        List<DataPart> dataParts = super.extractDataParts(exchange);
 
-        ShsMessage shsMessage = exchange.getIn().getBody(ShsMessage.class);
-        /* if the body already IS a n shs message, do nothing. */
-        if (shsMessage != null) {
-            return shsMessage;
-        } else {
-            shsMessage = new ShsMessage();
+        if (!dataParts.isEmpty()) {
+            return dataParts;
         }
 
-        /* create label from headers on the message */
-        shsMessage.setLabel(labelBinding.toLabel(exchange.getIn().getHeaders()));
+        dataParts = new ArrayList();
+        DataPart dataPart = dataPartBinding.toDataPart(
+                exchange.getIn().getMandatoryBody(InputStream.class),
+                exchange.getIn().getHeaders());
 
-        if (shsMessage.getLabel() == null) {
-            throw new RuntimeException("Can't assemble shs message, no label found");
-        }
-
-
-        /* create a data part from the body of the camel message */
-        DataPart dataPart = exchange.getIn().getBody(DataPart.class);
-
-        /* if the body already IS a data part, do nothing. */
         if (dataPart == null) {
-            dataPart = dataPartBinding.toDataPart(
-                    exchange.getIn().getMandatoryBody(InputStream.class),
-                    exchange.getIn().getHeaders());
-
-            if (dataPart == null) {
-                throw new RuntimeException("Can't assemble data part from camel exchange");
-            }
+            throw new RuntimeException("Can't assemble data part from camel exchange");
+        } else {
+            dataParts.add(dataPart);
         }
 
-        /* this binding only binds the body to the first data part. */
-        shsMessage.addDataPart(dataPart);
-
-        updateLabelContent(shsMessage);
-
-        return shsMessage;
+        return dataParts;
     }
-
 
     @Override
     public void fromShsMessage(ShsMessage shsMessage, Exchange exchange) throws Exception  {
