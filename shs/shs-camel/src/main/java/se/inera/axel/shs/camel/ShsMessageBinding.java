@@ -30,10 +30,12 @@ public abstract class ShsMessageBinding {
      */
     public ShsMessage toShsMessage(Exchange exchange) throws Exception  {
 
-        ShsMessage shsMessage = exchange.getIn().getBody(ShsMessage.class);
+
+        ShsMessage shsMessage = null;
+        Object body = exchange.getIn().getBody();
         /* if the body already IS a n shs message, do nothing. */
-        if (shsMessage != null) {
-            return shsMessage;
+        if (body instanceof ShsMessage) {
+            return (ShsMessage)body;
         } else {
             shsMessage = new ShsMessage();
         }
@@ -76,10 +78,15 @@ public abstract class ShsMessageBinding {
      * @return
      */
     protected List<DataPart> extractDataParts(Exchange exchange) throws Exception {
-        /*  */
         List<DataPart> dataParts = new ArrayList();
 
-        List<Object> bodyList = exchange.getIn().getBody(List.class);
+        Object body = exchange.getIn().getBody();
+
+        List<Object> bodyList = null;
+        if (body instanceof List) {
+            bodyList = (List)body;
+        }
+
         if (bodyList != null && !bodyList.isEmpty()) {
             for (Object bodyItem : bodyList) {
                 if (bodyItem instanceof DataPart) {
@@ -90,11 +97,9 @@ public abstract class ShsMessageBinding {
             if (dataParts.size() != bodyList.size()) {
                 dataParts.clear();
             }
-        } else {
-            DataPart dataPart = exchange.getIn().getBody(DataPart.class);
-            if (dataPart != null) {
-                dataParts.add(dataPart);
-            }
+        } else if (body instanceof DataPart) {
+            DataPart dataPart = (DataPart)body;
+            dataParts.add(dataPart);
         }
 
         return dataParts;

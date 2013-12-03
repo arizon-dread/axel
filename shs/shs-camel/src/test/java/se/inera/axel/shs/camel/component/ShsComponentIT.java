@@ -18,26 +18,22 @@
  */
 package se.inera.axel.shs.camel.component;
 
-import org.apache.camel.*;
+import org.apache.camel.EndpointInject;
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.testng.CamelTestSupport;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.Test;
-import se.inera.axel.shs.camel.ThrowExceptionOnShsErrorProcessor;
-import se.inera.axel.shs.mime.ShsMessage;
+import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.TransferType;
-import se.inera.axel.shs.xml.management.Confirmation;
-import se.inera.axel.shs.xml.management.Error;
-import se.inera.axel.shs.xml.management.ShsManagement;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import static se.inera.axel.shs.mime.ShsMessageTestObjectMother.*;
+import java.util.UUID;
 
 @ContextConfiguration
 public class ShsComponentIT extends CamelTestSupport {
@@ -46,7 +42,21 @@ public class ShsComponentIT extends CamelTestSupport {
 //
 	@EndpointInject(uri = "mock:result")
 	MockEndpoint resultEndpoint;
-	
+
+    @Override
+    protected JndiRegistry createRegistry() throws Exception {
+        JndiRegistry reg = super.createRegistry();
+
+
+        ShsClient client = new ShsClient();
+        client.setRsUrl("http://localhost:8585/shs/rs");
+        client.setDsUrl("http://localhost:8585/shs/ds");
+
+        reg.bind("testAxel", client);
+
+        return reg;
+    }
+
 	@Override
 	protected RouteBuilder createRouteBuilder() throws Exception {
 		return new RouteBuilder() {
@@ -55,9 +65,14 @@ public class ShsComponentIT extends CamelTestSupport {
 			public void configure() throws Exception {
 				
 				from("direct:start")
-				.setHeader(ShsHeaders.TO, constant("0000000000"))
-                .setHeader(ShsHeaders.FROM, constant("0000000000"))
-				.to("shs:http://localhost:8585/shs/rs");
+				.setHeader(ShsHeaders.TO, constant("0000000000.junit"))
+                .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
+                .setHeader(ShsHeaders.TRANSFERTYPE, constant(TransferType.ASYNCH))
+                .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
+                .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
+                .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
+				.to("shs:testAxel")
+                .to(resultEndpoint);
 
 			}
 		};
@@ -70,21 +85,24 @@ public class ShsComponentIT extends CamelTestSupport {
         resultEndpoint.expectedMessageCount(1);
 
         Map<String, Object> headers = new HashMap<String, Object>();
-        headers.put(ShsHeaders.FROM, DEFAULT_TEST_FROM);
-        headers.put(ShsHeaders.TO, DEFAULT_TEST_TO);
-        headers.put(ShsHeaders.SUBJECT, DEFAULT_TEST_SUBJECT);
-        headers.put(ShsHeaders.TRANSFERTYPE, TransferType.SYNCH);
-        headers.put(ShsHeaders.PRODUCT_ID, DEFAULT_TEST_PRODUCT_ID);
-        headers.put(ShsHeaders.DATAPART_CONTENTTYPE, "text/xml");
-        headers.put(ShsHeaders.DATAPART_FILENAME, "MyXmlFile.xml");
-        headers.put(ShsHeaders.DATAPART_CONTENTLENGTH, "BODY".length());
-        headers.put(ShsHeaders.DATAPART_TYPE, "xml");
+//        headers.put(ShsHeaders.FROM, DEFAULT_TEST_FROM);
+//        headers.put(ShsHeaders.TO, DEFAULT_TEST_TO);
+//        headers.put(ShsHeaders.SUBJECT, DEFAULT_TEST_SUBJECT);
+//        headers.put(ShsHeaders.TRANSFERTYPE, TransferType.ASYNCH);
+//        headers.put(ShsHeaders.PRODUCT_ID, DEFAULT_TEST_PRODUCT_ID);
+//        headers.put(ShsHeaders.DATAPART_CONTENTTYPE, "text/xml");
+//        headers.put(ShsHeaders.DATAPART_FILENAME, "MyXmlFile.xml");
+//        headers.put(ShsHeaders.DATAPART_CONTENTLENGTH, "BODY".length());
+//        headers.put(ShsHeaders.DATAPART_TYPE, "xml");
 
         template.sendBodyAndHeaders("direct:start", "BODY", headers);
 
         resultEndpoint.assertIsSatisfied(1000);
         Exchange exchange = resultEndpoint.getExchanges().get(0);
-        assertIsInstanceOf(ShsMessage.class, exchange.getIn().getBody());
+        assertIsInstanceOf(String.class, exchange.getIn().getBody());
+        UUID.fromString(exchange.getIn().getBody(String.class));
+        System.out.println("txid: " + UUID.fromString(exchange.getIn().getBody(String.class)));
+        //assertTrue();
 
     }
 	

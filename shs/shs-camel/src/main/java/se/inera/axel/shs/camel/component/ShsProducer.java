@@ -22,14 +22,11 @@ import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.inera.axel.shs.camel.DefaultCamelToShsMessageProcessor;
 import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.exception.IllegalMessageStructureException;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
-
-import java.io.IOException;
 
 /**
  * Camel SHS Message producer.
@@ -50,7 +47,6 @@ public class ShsProducer extends DefaultProducer {
             throw new IllegalMessageStructureException("Camel exchange can not be evaluated as an ShsMessage");
         }
 
-        // TODO look at exchange pattern or shs message transfertype??
         switch (shsMessage.getLabel().getTransferType()) {
             case ASYNCH:
                 doAsynchSend(exchange, shsMessage);

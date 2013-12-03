@@ -57,9 +57,15 @@ public class ShsDataPartBinding {
 
         dataPart.setFileName(fileName);
 
-        Long contentLength = (Long)headers.get(ShsHeaders.DATAPART_CONTENTLENGTH);
+        Long contentLength = null;
+        if (headers.containsKey(ShsHeaders.DATAPART_CONTENTLENGTH)) {
+            contentLength = Long.parseLong("" + headers.get(ShsHeaders.DATAPART_CONTENTLENGTH));
+        }
+
         if (contentLength == null) {
-            contentLength = (Long)headers.get(Exchange.CONTENT_LENGTH);
+            if (headers.containsKey(Exchange.CONTENT_LENGTH)) {
+                contentLength = Long.parseLong("" + headers.get(Exchange.CONTENT_LENGTH));
+            }
         }
 
         if (contentLength == null) {
@@ -67,7 +73,7 @@ public class ShsDataPartBinding {
         }
 
 
-        dataPart.setContentLength(contentLength.longValue());
+        dataPart.setContentLength(contentLength);
         dataPart.setDataHandler(
                 new DataHandler(
                         new InputStreamDataSource(body,

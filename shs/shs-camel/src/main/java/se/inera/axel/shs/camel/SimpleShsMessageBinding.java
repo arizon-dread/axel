@@ -2,7 +2,6 @@ package se.inera.axel.shs.camel;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import se.inera.axel.shs.exception.IllegalMessageStructureException;
 import se.inera.axel.shs.mime.DataPart;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.xml.label.ShsLabel;
@@ -26,7 +25,7 @@ public class SimpleShsMessageBinding extends ShsMessageBinding {
     protected List<DataPart> extractDataParts(Exchange exchange) throws Exception {
         List<DataPart> dataParts = super.extractDataParts(exchange);
 
-        if (!dataParts.isEmpty()) {
+        if (dataParts != null && !dataParts.isEmpty()) {
             return dataParts;
         }
 
