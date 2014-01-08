@@ -20,6 +20,7 @@ package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.JndiRegistry;
@@ -74,10 +75,48 @@ public class ShsComponentIT extends CamelTestSupport {
 				.to("shs:testAxel")
                 .to(resultEndpoint);
 
+
+
+
+
+
+
+                from("file:/tmp/in/")
+                .setHeader(ShsHeaders.TO, constant("0000000000.filesystem"))
+                .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
+                .setHeader(ShsHeaders.TRANSFERTYPE, constant(TransferType.ASYNCH))
+                .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
+                .setHeader(ShsHeaders.DATAPART_FILENAME, header(Exchange.FILE_NAME_ONLY))
+                .setHeader(ShsHeaders.DATAPART_CONTENTLENGTH, header(Exchange.FILE_LENGTH))
+                .setHeader(ShsHeaders.DATAPART_TYPE, simple("${file:name.ext}"))
+                .to("shs:http://localhost:8585/shs/rs")
+                .log("Delivered message with txId = ${body}.");
+
+
+
+                from("shs:http://localhost:8585/shs/ds/0000000000.filesystem?" +
+                        "producttype=00000000-0000-0000-0000-000000000000")
+                .setHeader(Exchange.FILE_NAME, header(ShsHeaders.TXID))
+                .to("file:/tmp/out");
+
+
+
+
+
+
+
+
+
 			}
 		};
 	}
 	
+    @DirtiesContext
+   	@Test(enabled = true)
+   	public void pollFiles() throws Exception {
+        Thread.sleep(20000);
+    }
+
 	@DirtiesContext
 	@Test(enabled = false)
 	public void testShouldThrowException() throws Exception {
