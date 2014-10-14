@@ -20,32 +20,33 @@ package se.inera.axel.shs.broker.rs.internal;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
+import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.http.HttpOperationFailedException;
-import org.apache.camel.component.http.SSLContextParametersSecureProtocolSocketFactory;
-import org.apache.camel.util.jsse.SSLContextParameters;
-import org.apache.commons.httpclient.protocol.Protocol;
-import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
+import org.apache.commons.lang.StringUtils;
 import se.inera.axel.shs.broker.messagestore.ShsMessageEntry;
 import se.inera.axel.shs.exception.MissingDeliveryExecutionException;
 import se.inera.axel.shs.exception.OtherErrorException;
 import se.inera.axel.shs.exception.ShsException;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ResponseMessageBuilder;
+import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.ShsLabel;
 
 import java.io.IOException;
+import java.util.Map;
+
+import static org.apache.camel.builder.PredicateBuilder.startsWith;
 
 /**
  * Defines pipeline for processing and routing SHS asynchronous messages.
  */
 public class AsynchBrokerRouteBuilder extends RouteBuilder {
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(AsynchBrokerRouteBuilder.class);
 
 
     @Override
     public void configure() throws Exception {
-        configureSsl();
-
         errorHandler(deadLetterChannel("direct:errors").useOriginalMessage());
 
 
@@ -100,7 +101,11 @@ public class AsynchBrokerRouteBuilder extends RouteBuilder {
         .setHeader(Exchange.CONTENT_TYPE, constant("message/rfc822"))
         .setProperty("ShsMessageEntry", body())
         .beanRef("messageLogService", "loadMessage")
-        .to("http://shsServer")
+        .choice().when(startsWith(header(Exchange.HTTP_URI), constant("https")))
+            .to("https4://shsServer?httpClient.soTimeout=300000&disableStreamCache=true&sslContextParameters=shsRsSslContext&x509HostnameVerifier=allowAllHostnameVerifier")
+        .otherwise()
+            .to("http4://shsServer?httpClient.soTimeout=300000&disableStreamCache=true")
+        .end()
         .setBody(property("ShsMessageEntry"))
         .beanRef("messageLogService", "messageSent");
 
@@ -118,20 +123,6 @@ public class AsynchBrokerRouteBuilder extends RouteBuilder {
         .bean(ErrorMessageBuilder.class)
         .to("direct-vm:shs:rs");
     }
-
-    private void configureSsl() {
-        SSLContextParameters sslContextParameters = getContext().getRegistry().lookup("mySslContext", SSLContextParameters.class);
-
-        ProtocolSocketFactory factory =
-                new SSLContextParametersSecureProtocolSocketFactory(sslContextParameters);
-
-        Protocol.registerProtocol("https",
-                new Protocol(
-                        "https",
-                        factory,
-                        443));
-    }
-
 
     public static class ErrorMessageBuilder {
         ResponseMessageBuilder builder = new ResponseMessageBuilder();
@@ -155,13 +146,39 @@ public class AsynchBrokerRouteBuilder extends RouteBuilder {
             } else if (exception instanceof IOException) {
                 exception = new MissingDeliveryExecutionException(exception);
             } else if (exception instanceof HttpOperationFailedException) {
-                exception = new MissingDeliveryExecutionException(exception);
+                HttpOperationFailedException httpOperationFailedException = (HttpOperationFailedException)exception;
+                exception = createMissingDeliveryExecutionException(
+                        exception,
+                        httpOperationFailedException.getResponseHeaders(),
+                        httpOperationFailedException.getResponseBody());
+            } else if (exception instanceof org.apache.camel.component.http4.HttpOperationFailedException) {
+                org.apache.camel.component.http4.HttpOperationFailedException httpOperationFailedException = (org.apache.camel.component.http4.HttpOperationFailedException)exception;
+                exception = createMissingDeliveryExecutionException(
+                        exception,
+                        httpOperationFailedException.getResponseHeaders(),
+                        httpOperationFailedException.getResponseBody());
             } else {
                 exception = new OtherErrorException(exception);
             }
 
             if (exception != null)
                 exchange.setProperty(Exchange.EXCEPTION_CAUGHT, exception);
+        }
+
+        private Exception createMissingDeliveryExecutionException(
+                Exception exception,
+                Map<String, String> responseHeaders,
+                String errorInfo) {
+
+            LOG.debug("Failed Http response headers: {}", responseHeaders);
+
+            exception = new MissingDeliveryExecutionException(
+                    String.format(
+                            "Delivery of message failed. Response headers: %s Response body: %s",
+                            responseHeaders.toString(),
+                        errorInfo),
+                    exception);
+            return exception;
         }
     }
 }

@@ -56,7 +56,6 @@ public class MongoMessageLogAdminServiceIT extends AbstractMongoMessageLogTest {
     @Autowired
     MessageLogAdminService messageLogAdminService;
 
-    @DirtiesContext
     @Test
     public void findMessageByTxid() throws Exception {
         ShsMessage message = make(a(ShsMessageMaker.ShsMessage));
@@ -75,7 +74,6 @@ public class MongoMessageLogAdminServiceIT extends AbstractMongoMessageLogTest {
 
     }
 
-    @DirtiesContext
     @Test
     public void findMessagesByCorrId() throws Exception {
 
@@ -93,7 +91,6 @@ public class MongoMessageLogAdminServiceIT extends AbstractMongoMessageLogTest {
         }
     }
 
-    @DirtiesContext
     @Test
     public void findRelatedMessages() throws Exception {
         ShsMessage message = make(a(ShsMessageMaker.ShsMessage));
@@ -120,10 +117,9 @@ public class MongoMessageLogAdminServiceIT extends AbstractMongoMessageLogTest {
         Assert.assertTrue(countRelatedEntries <= maxRelatedEntries, "Exceeded max number of related entries that should get fetched");
     }
 
-    @DirtiesContext
     @Test
     public void findMessagesByProduct() throws Exception {
-        String PRODUCT_TERM = "00001";
+        String PRODUCT_TERM = "00000";
         MessageLogAdminService.Filter filter = new MessageLogAdminService.Filter();
         filter.setProduct(PRODUCT_TERM);
 
@@ -141,7 +137,6 @@ public class MongoMessageLogAdminServiceIT extends AbstractMongoMessageLogTest {
         }
     }
 
-    @DirtiesContext
     @Test
     public void findMessagesByFrom() throws Exception {
 
@@ -162,7 +157,6 @@ public class MongoMessageLogAdminServiceIT extends AbstractMongoMessageLogTest {
         }
     }
 
-    @DirtiesContext
     @Test
     public void findMessagesByTo() throws Exception {
 
@@ -183,11 +177,10 @@ public class MongoMessageLogAdminServiceIT extends AbstractMongoMessageLogTest {
         }
     }
 
-    @DirtiesContext
     @Test
     public void findMessagesByFilename() throws Exception {
 
-        String FILE_TERM = "txt";
+        String FILE_TERM = "test";
         MessageLogAdminService.Filter filter = new MessageLogAdminService.Filter();
         filter.setFilename(FILE_TERM);
 
@@ -205,7 +198,6 @@ public class MongoMessageLogAdminServiceIT extends AbstractMongoMessageLogTest {
         }
     }
 
-    @DirtiesContext
     @Test
     public void findMessagesByState() throws Exception {
 
@@ -225,7 +217,6 @@ public class MongoMessageLogAdminServiceIT extends AbstractMongoMessageLogTest {
         }
     }
 
-    @DirtiesContext
     @Test
     public void findMessagesByAck() throws Exception {
 
@@ -244,4 +235,30 @@ public class MongoMessageLogAdminServiceIT extends AbstractMongoMessageLogTest {
             }
         }
     }
+
+	@Test
+	public void findMessagesByCorrIdAndAck() throws Exception {
+
+		MessageLogAdminService.Filter filter = new MessageLogAdminService.Filter();
+		filter.setCorrId("testing-corrid");
+
+		Boolean ACK_TERM = false;
+		filter.setAcknowledged(ACK_TERM);
+
+		Iterable<ShsMessageEntry> results = messageLogAdminService
+				.findMessages(filter);
+		Assert.assertNotNull(results);
+		Assert.assertTrue(results.iterator().hasNext(), "Result has no entries");
+
+		for (ShsMessageEntry result : results) {
+			if (!"testing-corrid".equals(result.getLabel().getCorrId())) {
+				Assert.fail("Result contains messages that don't match criteria");
+			}
+
+			if (!(result.isAcknowledged() == ACK_TERM))
+            {
+                Assert.fail("Result contains messages that don't match criteria");
+            }
+		}
+	}
 }

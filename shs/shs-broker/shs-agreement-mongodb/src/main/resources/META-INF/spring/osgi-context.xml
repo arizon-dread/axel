@@ -21,11 +21,16 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:osgi="http://www.springframework.org/schema/osgi"
+
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+
        http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd">
 
-    <osgi:reference id="mongoDbFactory" interface="org.springframework.data.mongodb.MongoDbFactory" filter="(writeConcern=DEFAULT)"/>
+    <osgi:reference id="mongoDbFactory" interface="org.springframework.data.mongodb.MongoDbFactory" filter="(name=axel)"/>
 	<osgi:reference id="directoryService" interface="se.inera.axel.shs.broker.directory.DirectoryService" />
+
+    <osgi:reference id="cacheManager" interface="org.springframework.cache.CacheManager" filter="(name=axel)"/>
+
 
     <osgi:service ref="agreementService" >
         <osgi:interfaces>
@@ -38,6 +43,6 @@
             <value>se.inera.axel.shs.broker.agreement.AgreementAdminService</value>
         </osgi:interfaces>
     </osgi:service>
-    
+
 </beans>
 

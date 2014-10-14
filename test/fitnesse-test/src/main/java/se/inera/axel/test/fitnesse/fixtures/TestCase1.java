@@ -1,11 +1,14 @@
 package se.inera.axel.test.fitnesse.fixtures;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import se.inera.axel.shs.cmdline.ShsCmdline;
@@ -19,6 +22,7 @@ public class TestCase1 {
 	private String toAddress;
 	private String productId;
 	private String inputFile;
+    private String endRecipient;
 	private String expectedResponseFile;
 
 	public void setMessageType(String messageType) {
@@ -41,6 +45,10 @@ public class TestCase1 {
 		this.inputFile = inputFile;
 	}
 
+    public void setEndRecipient(String endRecipient) {
+        this.endRecipient = endRecipient;
+    }
+
 	public void setExpectedResponseFile(String expectedResponseFile) {
 		this.expectedResponseFile = expectedResponseFile;
 	}
@@ -56,6 +64,7 @@ public class TestCase1 {
 		args = addIfNotNull(args, "-f", this.fromAddress);
 		args = addIfNotNull(args, "-t", this.toAddress);
 		args = addIfNotNull(args, "-p", this.productId);
+		args = addIfNotNull(args, "-E", this.endRecipient);
 		args = addIfNotNull(args, "-in", inFile.getAbsolutePath());
 		args = addIfNotNull(args, "-out", outFile.getAbsolutePath());
 
@@ -86,10 +95,14 @@ public class TestCase1 {
 	public boolean responseMatchesFile() throws Throwable {
 		File outFile = sendMessage();
 
-		File expectedFile = new File(ClassLoader.getSystemResource(
-				this.expectedResponseFile).getFile());
-
-		return FileUtils.contentEquals(outFile, expectedFile);
+        if (IOUtils.contentEquals(new BufferedInputStream(FileUtils.openInputStream(outFile)),
+                getClass().getClassLoader().getResourceAsStream(this.expectedResponseFile))) {
+            System.out.println("Response matches");
+            return true;
+        } else {
+            System.out.println("Response does not match");
+            return false;
+        }
 	}
 
 	public String responseString() throws Throwable {

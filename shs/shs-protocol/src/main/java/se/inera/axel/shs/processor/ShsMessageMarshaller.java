@@ -23,9 +23,7 @@ import org.apache.commons.io.output.DeferredFileOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import se.inera.axel.shs.exception.IllegalMessageStructureException;
-import se.inera.axel.shs.exception.ShsException;
 import se.inera.axel.shs.mime.DataPart;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.xml.label.Compound;
@@ -53,7 +51,7 @@ import java.util.Properties;
  *
  */
 public class ShsMessageMarshaller {
-	// Försäkringskassan cannot handle content ids with a length > 36
+	// Some vendors cannot handle content ids with a length > 36
 	public static final int MAX_LENGTH_CONTENT_ID = 36;
 
 	Logger log = LoggerFactory.getLogger(ShsMessageMarshaller.class);
@@ -204,7 +202,7 @@ public class ShsMessageMarshaller {
 			MimeMultipart multipart = (MimeMultipart) msgContent;
 	
 			if (multipart.getCount() < 2) {
-			    throw new IllegalMessageStructureException("SHS message must containt at least two mime bodyparts");
+			    throw new IllegalMessageStructureException("SHS message must contain at least two mime bodyparts");
 			}
 			
 			ShsMessage shsMessage = new ShsMessage();
@@ -264,16 +262,26 @@ public class ShsMessageMarshaller {
         }
 	}
 
+    /**
+     * Reads the beginning of the stream to parse the label.
+     *
+     * @param inputStream a stream that must either support mark or be a StreamCache so that it can be reset.
+     *
+     * @return the label parsed from the stream
+     *
+     * @throws IllegalMessageStructureException if the label cannot be parsed or if the stream cannot be
+     * reset after the label has been parsed.
+     */
     public ShsLabel parseLabel(InputStream inputStream) throws IllegalMessageStructureException {
 
-        if (!inputStream.markSupported()) {
-            throw new IllegalArgumentException("stream does not support mark");
-        }
-
         try {
+            // Mark might not be supported
             inputStream.mark(4096);
             byte[] buffer = new byte[4096];
             IOUtils.read(inputStream, buffer, 0, 4096);
+
+            // Will throw IOException if the InputStream mark has been invalidated
+            // or if the stream does not support mark and is not a StreamCache
             inputStream.reset();
 
             String xml = StringUtils.substringBetween(new String(buffer, Charset.forName("ISO-8859-1")), "<shs.label ", "</shs.label>");

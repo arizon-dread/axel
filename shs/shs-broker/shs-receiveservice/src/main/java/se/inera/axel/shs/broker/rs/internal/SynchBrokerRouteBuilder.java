@@ -19,13 +19,14 @@
 package se.inera.axel.shs.broker.rs.internal;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.Property;
+import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.http.SSLContextParametersSecureProtocolSocketFactory;
+import org.apache.camel.component.http.HttpOperationFailedException;
 import org.apache.camel.util.jsse.SSLContextParameters;
-import org.apache.commons.httpclient.protocol.Protocol;
-import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
-import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
+import se.inera.axel.shs.processor.ShsMessageMarshaller;
 import se.inera.axel.shs.xml.label.SequenceType;
 import se.inera.axel.shs.xml.label.ShsLabel;
 
@@ -33,79 +34,76 @@ import se.inera.axel.shs.xml.label.ShsLabel;
  * Defines pipeline for processing and routing SHS synchronous messages
  */
 public class SynchBrokerRouteBuilder extends RouteBuilder {
-    private String debugBodyMaxChars = "5000";
 
     private boolean enableStreamCaching = false;
-
-    public void setDebugBodyMaxChars(String debugBodyMaxChars) {
-        this.debugBodyMaxChars = debugBodyMaxChars;
-    }
 
     public void setEnableStreamCaching(boolean enabled) {
         this.enableStreamCaching = enabled;
     }
 
-
     @Override
     public void configure() throws Exception {
-        getContext().getProperties().put(Exchange.LOG_DEBUG_BODY_MAX_CHARS, debugBodyMaxChars);
-        getContext().setStreamCaching(enableStreamCaching);
+        getContext().setStreamCaching(true);
 
-        configureSsl();
+        onException(Exception.class)
+        .useOriginalMessage()
+        .log(LoggingLevel.INFO, "Exception caught: ${exception.stacktrace}")
+        .handled(false);
+
+        onException(HttpOperationFailedException.class)
+                .onWhen(header(ShsHeaders.X_SHS_ERRORCODE).isNotNull())
+                .useOriginalMessage()
+                .handled(false)
+                .beanRef("remoteMessageHandlingErrorHandler");
 
         from("direct-vm:shs:synch").routeId("direct-vm:shs:synch")
-        .setProperty(RecipientLabelTransformer.PROPERTY_SHS_RECEIVER_LIST, method("shsRouter", "resolveRecipients(${body.label})"))
-        .bean(RecipientLabelTransformer.class, "transform(${body.label},*)")
-        .beanRef("commonNameTransformer")
-        .beanRef("agreementService", "validateAgreement(${body.label})")
+// Disabled content based (agreement based) routing for synchronous messages
+// to avoid needing to transform the mime request.
+//        .setProperty(RecipientLabelTransformer.PROPERTY_SHS_RECEIVER_LIST,
+//                method("shsRouter", "resolveRecipients(${property.ShsLabel})"))
+//        .bean(RecipientLabelTransformer.class, "transform(${property.ShsLabel},*)")
+//        .beanRef("commonNameTransformer")
+        .beanRef("agreementService", "validateAgreement(${property.ShsLabel})")
+        .removeHeaders("CamelHttp*")
+        .setHeader(Exchange.CONTENT_TYPE, constant("message/rfc822"))
+//		.setProperty("request", body())
         .choice()
-        .when().method("shsRouter", "isLocal(${body.label})")
-        .to("direct:sendSynchLocal")
+        .when().method("shsRouter", "isLocal(${property.ShsLabel})")
+            .to("direct:sendSynchLocal")
         .otherwise()
-        .to("direct:sendSynchRemote")
-        .end();
+            .to("direct:sendSynchRemote")
+        .end()
+        .setProperty(ShsHeaders.LABEL, method(ShsMessageMarshaller.class, "parseLabel"))
+        .setProperty(ShsHeaders.LABEL, method(ReplyLabelProcessor.class));
 
         from("direct:sendSynchRemote").routeId("direct:sendSynchRemote")
         .removeHeaders("CamelHttp*")
         .setHeader(Exchange.HTTP_URI, method("shsRouter", "resolveEndpoint(${body.label})"))
-        .setHeader(Exchange.CONTENT_TYPE, constant("message/rfc822"))
         .beanRef("messageLogService", "loadMessage")
-        .to("http://shsServer")
-        .inOnly("{{wireTapEndpoint}}")
-        .bean(ReplyLabelProcessor.class)
-        .beanRef("messageLogService", "saveMessageStream");
+        .choice().when(PredicateBuilder.startsWith(header(Exchange.HTTP_URI), constant("https")))
+            .to("https4://shsServer?httpClient.soTimeout=300000&disableStreamCache=true&sslContextParameters=shsRsSslContext&x509HostnameVerifier=allowAllHostnameVerifier")
+        .otherwise()
+            .to("http4://shsServer?httpClient.soTimeout=300000&disableStreamCache=true")
+        .end();
+
 
         from("direct:sendSynchLocal").routeId("direct:sendSynchLocal")
         .setHeader(ShsHeaders.DESTINATION_URI, method("shsRouter", "resolveEndpoint(${body.label})"))
-        .setHeader(Exchange.CONTENT_TYPE, constant("message/rfc822"))
-        .beanRef("messageLogService", "loadMessage")
-        .process(new ShsSubProcessor(header(ShsHeaders.DESTINATION_URI)))
-        .bean(ReplyLabelProcessor.class)
-        .beanRef("messageLogService", "saveMessageStream");
+        .process(new ShsSubProcessor(header(ShsHeaders.DESTINATION_URI)));
     }
 
     private void configureSsl() {
         SSLContextParameters sslContextParameters = getContext().getRegistry().lookup("mySslContext", SSLContextParameters.class);
-
-        ProtocolSocketFactory factory =
-                new SSLContextParametersSecureProtocolSocketFactory(sslContextParameters);
-
-        Protocol.registerProtocol("https",
-                new Protocol(
-                        "https",
-                        factory,
-                        443));
     }
 
     static public class ReplyLabelProcessor {
-        public ShsMessage fixReply(ShsMessage reply) {
-            ShsLabel label = reply.getLabel();
+        public ShsLabel fixReply(@Property(ShsHeaders.LABEL) ShsLabel label) {
             if (label.getSequenceType() != SequenceType.REPLY
                     && label.getSequenceType() != SequenceType.ADM) {
                 label.setSequenceType(SequenceType.REPLY);
             }
 
-            return reply;
+            return label;
         }
     }
 }

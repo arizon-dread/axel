@@ -26,7 +26,7 @@ import se.inera.axel.shs.broker.messagestore.MessageNotFoundException;
 import java.net.HttpURLConnection;
 
 public class DeliveryServiceRouteBuilder extends RouteBuilder {
-
+	
     @Override
     public void configure() throws Exception {
 
@@ -39,19 +39,16 @@ public class DeliveryServiceRouteBuilder extends RouteBuilder {
         onException(MessageNotFoundException.class)
         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpURLConnection.HTTP_NOT_FOUND))
         .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
-        .transform(simple("Message not found ${exception.message}\n"))
+        .transform(simple("${exception.message}\n"))
         .handled(true);
 
-        from("timer://releaseFetchingInProgressTimer?delay=30000&period=60000")
-        .beanRef("messageLogService", "releaseStaleFetchingInProgress()");
-        
-        from("jetty:{{shsDsHttpEndpoint}}:{{shsDsHttpEndpoint.port}}" + HttpPathParamsExtractor.PATH_PREFIX +
-                "?sslContextParametersRef=mySslContext" +
-                "&enableJmx=true" +
-                "&httpBindingRef=shsHttpBinding" +
+
+        from("{{shsDsHttpEndpoint}}{{shsDsPathPrefix}}/" +
+                "?" +
+                "httpBindingRef=shsHttpBinding" +
                 "&matchOnUriPrefix=true")
-        .routeId("jetty:" + HttpPathParamsExtractor.PATH_PREFIX)
-        .bean(new HttpPathParamsExtractor())
+        .routeId("/shs/ds")
+        .beanRef("httpPathParamsExtractor")
         .validate(header("outbox").isNotNull())
         .choice()
         .when(header(Exchange.HTTP_METHOD).isEqualTo("POST"))
@@ -94,13 +91,15 @@ public class DeliveryServiceRouteBuilder extends RouteBuilder {
 
         from("direct:acknowledgeMessage").routeId("direct:acknowledgeMessage")
         .beanRef("messageLogService", "loadEntry(${header.outbox}, ${header.txId})")
-        .beanRef("messageLogService", "messageAcknowledged(${body})")
         .choice()
-        .when().simple("${body.label.sequenceType} != 'ADM'")
+        .when().simple("${body.label.sequenceType} != 'ADM' && ${body.acknowledged} == false")
+            .beanRef("messageLogService", "messageAcknowledged(${body})")
             .bean(ConfirmMessageBuilder.class)
             .to("direct-vm:shs:rs")
+        .otherwise()
+            .beanRef("messageLogService", "messageAcknowledged(${body})")
         .end()
-        .setBody(constant(""));
+        .setBody(constant("OK"));
 
     }
 

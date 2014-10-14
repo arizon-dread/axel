@@ -1,19 +1,23 @@
 !*> Define common variables
-!define localServer {192.168.1.240}
-!define remoteServer {192.168.1.43}
-!define localReceiveServiceUrl (!-http://-!${localServer}:8585/shs/rs)
-!define localDeliveryServiceUrl (!-http://-!${localServer}:8585/shs/ds)
-!define localRestAdminUrl (!-http://-!${localServer}:8181/cxf/admin)
+!define localServer {axel-fitnesse-local-server}
+!define remoteServer {axel-fitnesse-remote-server}
+!define localContextRoot {${localServer}:8181/axel}
+!define localReceiveServiceUrl (!-http://-!${localContextRoot}/shs/rs)
+!define localDeliveryServiceUrl (!-http://-!${localContextRoot}/shs/ds)
+!define localRestAdminUrl (!-http://-!${localServer}:8181/axel/services/admin)
 
-!define remoteReceiveServiceUrl (!-http://-!${remoteServer}:8080/R2M/rs)
-!define remoteDeliveryServiceUrl (!-http://-!${remoteServer}:8080/R2M/ds)
+!define remoteReceiveServiceUrl (!-http://-!${remoteServer}:8080/shs/rs)
+!define remoteDeliveryServiceUrl (!-http://-!${remoteServer}:8080/shs/ds)
+!define remoteRestAdminUrl (!-http://-!${remoteServer}:8080/shs/services/admin)
 
 !define localOrgNumber {0000000000}
 !define remoteOrgNumber {1111111111}
 
+!define templateProduct {00000000-0000-0000-0000-000000000000}
 !define testProduct1 {00000000-0000-0000-0000-000000000001}
 !define testProduct2 {00000000-0000-0000-0000-000000000002}
 !define testProduct3 {00000000-0000-0000-0000-000000000003}
+!define testProduct4 {00000000-0000-0000-0000-000000000004}
 !define noAgreementProduct {00000000-0000-0000-0000-000000000013}
 !define testProduct14 {00000000-0000-0000-0000-000000000014}
 !define noRemoteAgreementProduct {00000000-0000-0000-0000-000000000015}

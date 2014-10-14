@@ -52,22 +52,19 @@
         <property name="properties">
             <props>
                 <prop key="shsRsHttpEndpoint">http://0.0.0.0</prop>
+                <prop key="shsRsPathPrefix">/shs/rs</prop>
                 <prop key="shsRsHttpEndpoint.port">8585</prop>
                 <prop key="nodeId">axel</prop>
 
-                <prop key="keyStoreParameters.resource">/certs/shs-test-server.p12</prop>
-                <prop key="keyStoreParameters.type">pkcs12</prop>
-                <prop key="keyStoreParameters.password">password</prop>
+                <prop key="shsRsKeyStoreParameters.resource">/certs/clientkeystore</prop>
+                <prop key="shsRsKeyStoreParameters.type">jks</prop>
+                <prop key="shsRsKeyStoreParameters.password">password</prop>
 
-                <prop key="trustStoreParameters.resource">/certs/ca-certs.jks</prop>
-                <prop key="trustStoreParameters.type">jks</prop>
-                <prop key="trustStoreParameters.password">password</prop>
+                <prop key="shsRsTrustStoreParameters.resource">/certs/ca-certs.jks</prop>
+                <prop key="shsRsTrustStoreParameters.type">jks</prop>
+                <prop key="shsRsTrustStoreParameters.password">password</prop>
 
                 <prop key="orgId">0000000000</prop>
-
-                <prop key="wireTapEndpoint">log:se.inera.axel.shs.broker.rs.wiretap?level=ERROR&amp;showAll=true&amp;multiline=true</prop>
-                <prop key="debugBodyMaxChars">5000</prop>
-                <prop key="shsJettyDisableStreamCache">true</prop>
 
                 <prop key="shsRsEnableStreamCaching">false</prop>
 

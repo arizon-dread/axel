@@ -31,7 +31,7 @@
     </cm:property-placeholder>
 
     <wicket:application id="axelWebConsole" class="se.inera.axel.webconsole.WicketApplication"
-        applicationName="Axel WebConsole" mountPoint="axel" />
+        applicationName="Axel WebConsole" mountPoint="axel/admin" />
 
     <reference-list id="navigationProviders" interface="se.inera.axel.webconsole.NavigationProvider" availability="optional" />
 
@@ -41,6 +41,8 @@
         <property name="nodeId" value="${nodeId}" />
         <property name="organizationNumber" value="${orgId}" />
         <property name="externalReceiveServiceUrl" value="${shs.externalReceiveServiceUrl}" />
+        <property name="groupId" value="se.inera.axel" />
+        <property name="artifactId" value="axel-webconsole" />
     </bean>
 </blueprint>
 

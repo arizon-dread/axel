@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2013 Inera AB (http://www.inera.se)
+
+    This file is part of Inera Axel (http://code.google.com/p/inera-axel).
+
+    Inera Axel is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Inera Axel is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camel="http://camel.apache.org/schema/spring"
+       xmlns:ctx="http://www.springframework.org/schema/context"
+       xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:cxf="http://camel.apache.org/schema/cxf"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+       http://www.springframework.org/schema/data/mongo http://www.springframework.org/schema/data/mongo/spring-mongo.xsd
+       http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+       ">
+
+    <import resource="classpath:META-INF/cxf/cxf.xml" />
+
+    <ctx:component-scan base-package="se.inera.axel.riv2ssek" />
+
+    <bean id="rivSsekRouteBuilder" class="se.inera.axel.riv2ssek.internal.RivSsekRouteBuilder" />
+    <bean id="rivSsekMappingService" class="se.inera.axel.riv2ssek.internal.DefaultRivSsekMappingService"/>
+
+    <bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+        <constructor-arg ref="mongoDbFactory" />
+    </bean>
+
+    <!-- Activates repository support by scanning the configured package for
+        interfaces extening MongoRepository. Will try to derive queries from the
+        methods declared in AlbumRepository e.g. The repository support will use
+        the bean called 'mongoTemplate' by default. Use 'mongo-template-ref' attribute
+        to customize. -->
+    <mongo:repositories base-package="se.inera.axel.riv2ssek" />
+
+    <camel:camelContext xmlns="http://camel.apache.org/schema/spring" id="riv-ssek" managementNamePattern="#name#" streamCache="true">
+
+        <routeBuilder ref="rivSsekRouteBuilder" />
+
+    </camel:camelContext>
+
+	<camel:sslContextParameters id="mySslContext" camelContextId="riv-ssek">
+
+		<camel:keyManagers keyPassword="{{keyStoreParameters.password}}">
+			<camel:keyStore resource="{{keyStoreParameters.resource}}"
+				password="{{keyStoreParameters.password}}" type="{{keyStoreParameters.type}}"/>
+		</camel:keyManagers>
+			
+		<camel:trustManagers>
+			<camel:keyStore resource="{{trustStoreParameters.resource}}"
+				password="{{trustStoreParameters.password}}"  type="{{trustStoreParameters.type}}"/>
+		</camel:trustManagers>
+		
+		<camel:clientParameters>
+			
+		</camel:clientParameters>
+
+		<camel:serverParameters clientAuthentication="REQUIRE"/>
+
+	</camel:sslContextParameters>
+    
+</beans>

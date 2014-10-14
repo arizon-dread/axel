@@ -18,12 +18,6 @@
  */
 package se.inera.axel.shs.broker.messagestore.internal;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.annotation.Resource;
-import javax.ws.rs.WebApplicationException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,12 +29,16 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-
 import se.inera.axel.shs.broker.messagestore.MessageLogAdminService;
 import se.inera.axel.shs.broker.messagestore.MessageStoreService;
 import se.inera.axel.shs.broker.messagestore.ShsMessageEntry;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.xml.label.ShsLabel;
+
+import javax.annotation.Resource;
+import javax.ws.rs.WebApplicationException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service("messageLogAdminService")
 public class MongoMessageLogAdminService implements MessageLogAdminService {
@@ -86,7 +84,7 @@ public class MongoMessageLogAdminService implements MessageLogAdminService {
         Criteria criteria = buildCriteria(filter);
         Query query = Query.query(criteria);
 
-        query.with(new Sort(Sort.Direction.DESC, "stateTimeStamp"));
+        query.with(new Sort(Sort.Direction.DESC, "arrivalTimeStamp"));
 
         query = query.limit(filter.getLimit());
         query = query.skip(filter.getSkip());
@@ -107,34 +105,44 @@ public class MongoMessageLogAdminService implements MessageLogAdminService {
     }
 
     private Criteria buildCriteria(Filter filter) {
-        Criteria criteria = Criteria.where("id").gt("");
+        Criteria criteria = new Criteria();
 
         if (filter.getTo() != null) {
-            criteria = criteria.and("label.to.value").regex(filter.getTo(), "i");
+            criteria = criteria.and("label.to.value").regex("^" + filter.getTo());
         }
 
         if (filter.getFrom() != null) {
-            criteria = criteria.and("label.originatorOrFrom.value").regex(filter.getFrom(), "i");
+            criteria = criteria.and("label.originatorOrFrom.value").regex("^" + filter.getFrom());
         }
 
         if (filter.getTxId() != null) {
-            criteria = criteria.and("label.txId").regex(filter.getTxId(), "i");
+            criteria = criteria.and("label.txId").regex("^" + filter.getTxId());
         }
 
         if (filter.getCorrId() != null) {
-            criteria = criteria.and("label.corrId").regex(filter.getCorrId(), "i");
+            criteria = criteria.and("label.corrId").regex("^" + filter.getCorrId());
         }
 
         if (filter.getFilename() != null) {
-            criteria = criteria.and("label.content.dataOrCompound.filename").regex(filter.getFilename(), "i");
+            criteria = criteria.and("label.content.dataOrCompound.filename").regex("^" + filter.getFilename());
         }
 
         if (filter.getProduct() != null) {
-            criteria = criteria.and("label.product.value").regex(filter.getProduct(), "i");
+            criteria = criteria.and("label.product.value").regex("^" + filter.getProduct());
         }
 
-        if (filter.getAcknowledged() != null) {
-            criteria = criteria.and("acknowledged").is(filter.getAcknowledged());
+        /* show both acknowledged and un-acknowledged messages by default */
+        if (filter.getAcknowledged() != null && filter.getAcknowledged() == false) {
+            criteria = criteria.and("acknowledged").in(null, false);
+        } else if (filter.getAcknowledged() != null && filter.getAcknowledged() == true) {
+            criteria = criteria.and("acknowledged").is(true);
+        }
+
+        /* don't show archived messages at all, unless asked to. */
+        if (filter.getArchived() == null || filter.getArchived() == false) {
+        	criteria = criteria.and("archived").in(false, null);
+        } else {
+        	criteria = criteria.and("archived").is(true);
         }
 
         if (filter.getState() != null) {

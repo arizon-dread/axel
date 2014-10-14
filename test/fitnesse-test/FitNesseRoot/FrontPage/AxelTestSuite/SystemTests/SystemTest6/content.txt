@@ -1,6 +1,6 @@
 !contents -R2 -g -p -f -h
 
-!define rivEndpointUri {${localServer}:8089/riv}
+!define rivEndpointUri {${localContextRoot}/riv}
 
 |Comment|Test Case 6a|
 
@@ -9,6 +9,7 @@
 |${rivEndpointUri}|ping-request-ok.xml|SOAPAction|urn:riv:itintegration:monitoring:PingForConfigurationResponder:1:PingForConfiguration|=~/PingForConfigurationResponse/|
 
 |Comment|Test Case 6b|
+|Request to org number 1111111111 for which there is no address in the directory for the product ${testProduct1} |
 
 !|Test Case 6|
 |Endpoint Uri      |Body                |Header    |Header Value                                                                         |response exception?       |
@@ -24,13 +25,13 @@
 
 !|Test Case 6|
 |Endpoint Uri      |Body                             |Header    |Header Value                                                                         |response string?                                  |
-|${rivEndpointUri}|ping-request-rivta21-receiver.xml|SOAPAction|urn:riv:itintegration:monitoring:PingForConfigurationResponder:1:PingForConfiguration|=~/No ws-addressing 'To'-address found in message/|
+|${rivEndpointUri}|ping-request-rivta21-receiver.xml|SOAPAction|urn:riv:itintegration:monitoring:PingForConfigurationResponder:1:PingForConfiguration|=~/PingForConfigurationResponse/|
 
 |Comment|Test Case 6e|
 
 !|Test Case 6|
 |Endpoint Uri      |Body                    |Header    |Header Value                                             |response exception?|
-|${rivEndpointUri}|make-booking-request.xml|SOAPAction|urn:riv:crm:scheduling:MakeBookingResponder:1:MakeBooking|=~/(?=.*OtherError)(?=.*HTTP operation failed)/|
+|${rivEndpointUri}|make-booking-request.xml|SOAPAction|urn:riv:crm:scheduling:MakeBookingResponder:1:MakeBooking|=~/MissingDeliveryExecutionException/|
 
 |Comment|Test Case 6f|
 

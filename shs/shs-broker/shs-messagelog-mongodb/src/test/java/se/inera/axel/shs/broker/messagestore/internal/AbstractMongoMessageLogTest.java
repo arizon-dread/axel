@@ -18,17 +18,30 @@
  */
 package se.inera.axel.shs.broker.messagestore.internal;
 
+import com.natpryce.makeiteasy.Maker;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.annotations.BeforeMethod;
 import se.inera.axel.shs.broker.messagestore.MessageLogService;
 import se.inera.axel.shs.broker.messagestore.ShsMessageEntry;
+import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.xml.label.SequenceType;
 import se.inera.axel.shs.xml.label.ShsLabelMaker;
 import se.inera.axel.shs.xml.label.Status;
 import se.inera.axel.shs.xml.label.TransferType;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.GregorianCalendar;
+import java.util.Properties;
 
 import static com.natpryce.makeiteasy.MakeItEasy.*;
 import static se.inera.axel.shs.mime.ShsMessageMaker.ShsMessage;
@@ -40,20 +53,27 @@ public class AbstractMongoMessageLogTest extends AbstractTestNGSpringContextTest
     @Autowired
     MessageLogService messageLogService;
 
-    @BeforeMethod
-    public void setupTestDB() {
-        messageLogService.saveMessage(
-                make(a(ShsMessage, with(ShsMessage.label, a(ShsLabel,
-                        with(transferType, TransferType.ASYNCH))))));
+    @Autowired
+    MongoDbFactory mongoDbFactory;
 
-        messageLogService.saveMessage(
-                make(a(ShsMessage, with(ShsMessage.label, a(ShsLabel,
-                        with(transferType, TransferType.ASYNCH))))));
+    @Autowired
+    MongoOperations mongoOperations;
+
+    @BeforeMethod
+    public void setupTestDB() throws IOException {
+        mongoDbFactory.getDb().dropDatabase();
+
+        Maker<se.inera.axel.shs.mime.ShsMessage> asynchMessage = a(ShsMessage,
+                with(ShsMessage.label, a(ShsLabel,
+                with(transferType, TransferType.ASYNCH))));
+
+        messageLogService.saveMessage(make(asynchMessage));
+
+        messageLogService.saveMessage(make(asynchMessage));
 
         messageLogService.messageSent(
                 messageLogService.saveMessage(
-                        make(a(ShsMessage, with(ShsMessage.label, a(ShsLabel,
-                                with(transferType, TransferType.ASYNCH)))))));
+                        make(asynchMessage)));
 
         messageLogService.messageReceived(
                 messageLogService.saveMessage(
@@ -62,8 +82,7 @@ public class AbstractMongoMessageLogTest extends AbstractTestNGSpringContextTest
 
         messageLogService.messageReceived(
                 messageLogService.saveMessage(
-                        make(a(ShsMessage, with(ShsMessage.label, a(ShsLabel,
-                                with(transferType, TransferType.ASYNCH)))))));
+                        make(asynchMessage)));
 
         messageLogService.messageReceived(
                 messageLogService.saveMessage(
@@ -94,8 +113,7 @@ public class AbstractMongoMessageLogTest extends AbstractTestNGSpringContextTest
 
         messageLogService.messageAcknowledged(messageLogService.messageReceived(
                 messageLogService.saveMessage(
-                        make(a(ShsMessage, with(ShsMessage.label, a(ShsLabel,
-                                with(transferType, TransferType.ASYNCH))))))));
+                        make(asynchMessage))));
 
         messageLogService.messageReceived(
                 messageLogService.saveMessage(
@@ -141,14 +159,21 @@ public class AbstractMongoMessageLogTest extends AbstractTestNGSpringContextTest
                                 with(to, a(To, with(To.value, ShsLabelMaker.DEFAULT_TEST_FROM))),
                                 with(subject, "lastWeeksMessage"),
                                 with(transferType, TransferType.ASYNCH)))))));
+        
+        //config for message "entry"
 
         GregorianCalendar lastWeek = new GregorianCalendar();
         lastWeek.add(GregorianCalendar.DAY_OF_MONTH, -7);
-
+        
         entry.setStateTimeStamp(lastWeek.getTime());
         messageLogService.update(entry);
+        
+        entry = messageLogService.saveMessage(
+                make(asynchMessage));
+        
+        messageLogService.update(entry);
 
-
+        mongoOperations.indexOps(ShsMessageEntry.class).ensureIndex(
+                new Index().on("label.txId", Sort.Direction.ASC).unique());
     }
-
 }

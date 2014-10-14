@@ -24,7 +24,7 @@ import org.apache.camel.*;
 import org.apache.camel.component.http.HttpOperationFailedException;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.testng.AbstractCamelTestNGSpringContextTests;
-import org.apache.camel.testng.AvailablePortFinder;
+import org.apache.camel.test.AvailablePortFinder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -53,7 +53,6 @@ import static se.inera.axel.shs.xml.label.ShsLabelMaker.ShsLabelInstantiator.*;
 
 @ContextConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-//@MockEndpointsAndSkip("http://shsServer")
 public class AsynchBrokerRouteBuilderTest extends AbstractCamelTestNGSpringContextTests {
 
     static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AsynchBrokerRouteBuilderTest.class);
@@ -151,7 +150,7 @@ public class AsynchBrokerRouteBuilderTest extends AbstractCamelTestNGSpringConte
 
         MockEndpoint.assertIsSatisfied(5, TimeUnit.SECONDS, sentMessagesEndpoint, endEndpoint);
 
-        verify(messageLogService, timeout(30000)).messageSent(any(ShsMessageEntry.class));
+        verify(messageLogService, timeout(10000)).messageSent(any(ShsMessageEntry.class));
     }
 
     @Test

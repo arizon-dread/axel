@@ -94,7 +94,6 @@ public class DefaultShsExceptionHandler implements ExceptionHandler {
 
         if (shsException == null) {
             IOException ioException = exchange.getException(IOException.class);
-
             if (ioException != null) {
                 shsException = new MissingDeliveryExecutionException(ioException);
             }

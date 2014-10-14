@@ -42,6 +42,12 @@
             <organization>R2M</organization>
             <organizationUrl>http://www.r2m.se</organizationUrl>
         </developer>
+        <developer>
+            <name>Joakim Anell</name>
+            <email>joakim.anell@r2m.se</email>
+            <organization>R2M</organization>
+            <organizationUrl>http://www.r2m.se</organizationUrl>
+        </developer>
     </developers>
 
     <contributors>
@@ -73,9 +79,13 @@
         <module>webconsole</module>
         <module>shs</module>
         <module>riv-shs</module>
+        <module>riv-ssek</module>
         <module>riv</module>
         <module>ssek</module>
         <module>platforms</module>
+        <module>docs</module>
+        <module>monitoring</module>
+        <module>test/test-support</module>
     </modules>
 
     <distributionManagement>
@@ -102,7 +112,7 @@
         <aopalliance.version>1.0</aopalliance.version>
         <axel.version>${project.version}</axel.version>
         <build-helper-maven-plugin.version>1.8</build-helper-maven-plugin.version>
-        <camel.version>2.12.1</camel.version>
+        <camel.version>2.12.3</camel.version>
         <cglib.version>2.2.2</cglib.version>
         <commons-codec.version>1.6</commons-codec.version>
         <commons-collections.version>3.2.1</commons-collections.version>
@@ -110,31 +120,32 @@
         <commons-io.version>2.4</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
         <commons-pool.version>1.6</commons-pool.version>
-        <cxf.version>2.7.6</cxf.version>
-        <de.flapdoodle.embed.mongo.version>1.36</de.flapdoodle.embed.mongo.version>
-        <de.flapdoodle.embed.process.version>1.33</de.flapdoodle.embed.process.version>
+        <cxf-xjc-plugin.version>2.7.0</cxf-xjc-plugin.version>
+        <cxf.version>2.7.10</cxf.version>
+        <de.flapdoodle.embed.mongo.version>1.42</de.flapdoodle.embed.mongo.version>
+        <de.flapdoodle.embed.process.version>1.36</de.flapdoodle.embed.process.version>
         <dozer.version>5.4.0</dozer.version>
-        <ehcache.spring.annotations.version>1.2.0</ehcache.spring.annotations.version>
         <ehcache.version>2.5.1</ehcache.version>
-        <fitnesse.version>20121220</fitnesse.version>
+        <fitnesse.version>20140201</fitnesse.version>
         <geronimo.version>1.0</geronimo.version>
         <guava.version>13.0.1</guava.version>
         <hamcrest.version>1.3</hamcrest.version>
-        <hawtio.version>1.2-M24</hawtio.version>
+        <hawtio.version>1.4.0</hawtio.version>
         <javamail.version>1.4.5</javamail.version>
         <jaxb.version>2.1</jaxb.version>
-        <jaxrs.version>2.0</jaxrs.version>
+        <jaxrs.version>2.0-m10</jaxrs.version>
         <jaxws.version>2.1</jaxws.version>
         <jcommander.version>1.30</jcommander.version>
+        <jetty.version>7.6.9.v20130131</jetty.version>
         <joda-time.version>2.2</joda-time.version>
-        <karaf.version>2.3.3</karaf.version>
+        <karaf.version>2.3.5</karaf.version>
         <make-it-easy.version>3.1.0</make-it-easy.version>
         <maven-antrun-plugin.version>1.7</maven-antrun-plugin.version>
         <maven-assembly-plugin.version>2.4</maven-assembly-plugin.version>
+        <maven-bundle-plugin.version>2.4.0</maven-bundle-plugin.version>
         <maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
         <maven-dependency-plugin.version>2.8</maven-dependency-plugin.version>
         <maven-deploy-plugin.version>2.7</maven-deploy-plugin.version>
-        <maven-enforcer-plugin.version>1.3.1</maven-enforcer-plugin.version>
         <maven-failsafe-plugin.version>2.14.1</maven-failsafe-plugin.version>
         <maven-install-plugin.version>2.4</maven-install-plugin.version>
         <maven-jar-plugin.version>2.4</maven-jar-plugin.version>
@@ -150,7 +161,7 @@
         <maven-sortpom-plugin.version>2.1.0</maven-sortpom-plugin.version>
         <maven-surefire-plugin.version>2.14.1</maven-surefire-plugin.version>
         <mockito.version>1.9.5</mockito.version>
-        <mongo-java-driver.version>2.10.1</mongo-java-driver.version>
+        <mongo-java-driver.version>2.11.4</mongo-java-driver.version>
         <pax.wicket.version>3.0.1</pax.wicket.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -158,12 +169,13 @@
         <servlet.version>2.5</servlet.version>
         <slf4j.version>1.6.6</slf4j.version>
         <smartrics-RestFixture.version>3.0</smartrics-RestFixture.version>
-        <spring-data-mongodb.version>1.3.1.RELEASE</spring-data-mongodb.version>
-        <spring-data.version>1.6.1.RELEASE</spring-data.version>
+        <spring-data-mongodb.version>1.3.5.RELEASE</spring-data-mongodb.version>
+        <spring-data.version>1.6.5.RELEASE</spring-data.version>
         <spring-ldap.version>1.3.2.RELEASE</spring-ldap.version>
         <spring.version>3.2.4.RELEASE</spring.version>
         <springockito.version>1.0.4</springockito.version>
         <testng.version>6.8.1</testng.version>
+        <unitils-core.version>3.3</unitils-core.version>
         <wicket.version>6.7.0</wicket.version>
         <xml-apis.version>1.0.b2</xml-apis.version>
     </properties>
@@ -193,12 +205,6 @@
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.googlecode.ehcache-spring-annotations</groupId>
-                <artifactId>ehcache-spring-annotations</artifactId>
-                <version>${ehcache.spring.annotations.version}</version>
             </dependency>
 
             <dependency>
@@ -262,6 +268,13 @@
             </dependency>
 
             <dependency>
+                <groupId>io.hawt</groupId>
+                <artifactId>hawtio-default</artifactId>
+                <version>${hawtio.version}</version>
+                <type>war</type>
+            </dependency>
+
+            <dependency>
                 <groupId>javax.activation</groupId>
                 <artifactId>activation</artifactId>
                 <version>${activation.version}</version>
@@ -305,6 +318,12 @@
             </dependency>
 
             <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>1.2.17</version>
+            </dependency>
+
+            <dependency>
                 <groupId>net.sf.dozer</groupId>
                 <artifactId>dozer</artifactId>
                 <version>${dozer.version}</version>
@@ -314,12 +333,6 @@
                 <groupId>net.sf.ehcache</groupId>
                 <artifactId>ehcache-core</artifactId>
                 <version>${ehcache.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.activemq</groupId>
-                <artifactId>activemq-broker</artifactId>
-                <version>${activemq.version}</version>
             </dependency>
 
             <dependency>
@@ -337,6 +350,12 @@
             <dependency>
                 <groupId>org.apache.activemq</groupId>
                 <artifactId>activemq-pool</artifactId>
+                <version>${activemq.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>activemq-spring</artifactId>
                 <version>${activemq.version}</version>
             </dependency>
 
@@ -366,6 +385,12 @@
 
             <dependency>
                 <groupId>org.apache.camel</groupId>
+                <artifactId>camel-http4</artifactId>
+                <version>${camel.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
                 <artifactId>camel-jetty</artifactId>
                 <version>${camel.version}</version>
             </dependency>
@@ -374,6 +399,36 @@
                 <groupId>org.apache.camel</groupId>
                 <artifactId>camel-jms</artifactId>
                 <version>${camel.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-quartz2</artifactId>
+                <version>${camel.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>c3p0</artifactId>
+                        <groupId>c3p0</groupId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-saxon</artifactId>
+                <version>${camel.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-servlet</artifactId>
+                <version>${camel.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>commons-logging</artifactId>
+                        <groupId>commons-logging</groupId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -390,6 +445,13 @@
 
             <dependency>
                 <groupId>org.apache.camel</groupId>
+                <artifactId>camel-test</artifactId>
+                <version>${camel.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
                 <artifactId>camel-test-spring</artifactId>
                 <version>${camel.version}</version>
                 <scope>test</scope>
@@ -400,6 +462,22 @@
                 <artifactId>camel-testng</artifactId>
                 <version>${camel.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-velocity</artifactId>
+                <version>${camel.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.cxf</groupId>
+                <artifactId>cxf-rt-bindings-soap</artifactId>
+                <version>${cxf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.cxf</groupId>
+                <artifactId>cxf-rt-databinding-jaxb</artifactId>
+                <version>${cxf.version}</version>
             </dependency>
 
             <dependency>
@@ -436,6 +514,21 @@
                 <artifactId>cxf-rt-transports-http-jetty</artifactId>
                 <version>${cxf.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.cxf.xjc-utils</groupId>
+                <artifactId>cxf-xjc-runtime</artifactId>
+                <version>${cxf-xjc-plugin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.cxf.xjcplugins</groupId>
+                <artifactId>cxf-xjc-dv</artifactId>
+                <version>${cxf-xjc-plugin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.cxf.xjcplugins</groupId>
+                <artifactId>cxf-xjc-ts</artifactId>
+                <version>${cxf-xjc-plugin.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
@@ -447,6 +540,24 @@
                 <groupId>org.apache.servicemix.specs</groupId>
                 <artifactId>org.apache.servicemix.specs.javamail-api-1.4</artifactId>
                 <version>2.2.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-server</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlet</artifactId>
+                <version>${jetty.version}</version>
             </dependency>
 
             <!--<dependency>
@@ -513,7 +624,6 @@
                 <groupId>org.ops4j.pax.wicket</groupId>
                 <artifactId>org.ops4j.pax.wicket.service</artifactId>
                 <version>${pax.wicket.version}</version>
-                <scope>provided</scope>
             </dependency>
 
             <dependency>
@@ -633,6 +743,30 @@
             </dependency>
 
             <dependency>
+                <groupId>org.unitils</groupId>
+                <artifactId>unitils-core</artifactId>
+                <version>${unitils-core.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>se.inera.axel</groupId>
+                <artifactId>axel-test-support</artifactId>
+                <version>${axel.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>se.inera.axel</groupId>
+                <artifactId>itintegration-monitoring-service</artifactId>
+                <version>${axel.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>se.inera.axel</groupId>
+                <artifactId>monitoring</artifactId>
+                <version>${axel.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>se.inera.axel</groupId>
                 <artifactId>shs-agreement-mongodb</artifactId>
                 <version>${axel.version}</version>
@@ -680,6 +814,16 @@
                 <version>${axel.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>se.inera.axel</groupId>
+                <artifactId>ssek-common</artifactId>
+                <version>${axel.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>se.riv.insuranceprocess.healthreporting</groupId>
+                <artifactId>insuranceprocess-healthreporting-schemas</artifactId>
+                <version>3.1.0</version>
+            </dependency>
             <dependency>
                 <groupId>xml-apis</groupId>
                 <artifactId>xml-apis</artifactId>
@@ -775,6 +919,11 @@
                     <version>${cxf.version}</version>
                 </plugin>
                 <plugin>
+                    <groupId>org.apache.cxf</groupId>
+                    <artifactId>cxf-xjc-plugin</artifactId>
+                    <version>${cxf-xjc-plugin.version}</version>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.karaf.tooling</groupId>
                     <artifactId>features-maven-plugin</artifactId>
                     <version>${karaf.version}</version>
@@ -792,13 +941,14 @@
                 <plugin>
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>
-                    <version>2.3.7</version>
+                    <version>${maven-bundle-plugin.version}</version>
                     <extensions>true</extensions>
                     <configuration>
+                        <obrRepository>NONE</obrRepository>
                         <instructions>
                             <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                             <Bundle-Name>${project.name}</Bundle-Name>
-                            <Bundle-DocURL>${project.url}</Bundle-DocURL>
+                            <Bundle-DocURL>https://code.google.com/p/inera-axel/wiki/Introduction</Bundle-DocURL>
                             <DynamicImport-Package>*</DynamicImport-Package>
                         </instructions>
                     </configuration>
@@ -855,27 +1005,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
-                        <groups>
-                            <group>
-                                <title>Axel - Packages</title>
-                                <packages>se.inera.axel.webconsole*</packages>
-                            </group>
-                            <group>
-                                <title>Axel - SHS Core Packages</title>
-                                <!--<packages>se.inera.axel.shs.processor:se.inera.axel.shs.xml*:se.inera.axel.shs.camel*:se.inera.axel.shs.cmdline:se.inera.axel.shs.exception:se.inera.axel.shs.protocol-->
-                                <!--</packages>-->
-                                <packages>se.inera.axel.shs*:!se.inera.axel.shs.broker*</packages>
-                            </group>
-                            <group>
-                                <title>Axel - SHS Server Packages</title>
-                                <packages>se.inera.axel.shs.broker*</packages>
-                            </group>
-                            <group>
-                                <title>Axel - RIV Packages</title>
-                                <packages>se.inera.axel.riv*</packages>
-                            </group>
-                        </groups>
-                        <excludePackageNames>se.riv*:org*</excludePackageNames>
+                        <source>1.7</source>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -936,6 +1066,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
                     <configuration>
+                        <group>largeTests</group>
                         <systemProperties>
                             <property>
                                 <name>java.io.tmpdir</name>
@@ -948,11 +1079,6 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>build-helper-maven-plugin</artifactId>
                     <version>${build-helper-maven-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>${maven-enforcer-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -1018,23 +1144,6 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>enforce</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <DependencyConvergence></DependencyConvergence>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
 

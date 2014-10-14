@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2013 Inera AB (http://www.inera.se)
+
+    This file is part of Inera Axel (http://code.google.com/p/inera-axel).
+
+    Inera Axel is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Inera Axel is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:osgi="http://www.springframework.org/schema/osgi"
+       xmlns:osgix="http://www.springframework.org/schema/osgi-compendium"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+
+       http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd
+       http://www.springframework.org/schema/osgi-compendium http://www.springframework.org/schema/osgi-compendium/spring-osgi-compendium.xsd">
+
+    <bean id="bridgePropertyPlaceholder" class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer">
+        <property name="properties" ref="props"/>
+        <property name="ignoreUnresolvablePlaceholders" value="true"/>
+        <property name="ignoreResourceNotFound" value="true"/>
+        <property name="location" value="${propsLocation}"/>
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE"/>
+    </bean>
+
+    <osgi:reference id="messageLogService" interface="se.inera.axel.shs.broker.messagestore.MessageLogService" />
+
+    <osgix:cm-properties id="props" persistent-id="se.inera.axel.shs.broker">
+        
+        <!-- cron scheduling properties -->
+        <prop key="releaseStaleFetchingInProgressCron">0+0,30+*+*+*+?</prop>
+        <prop key="archiveMessagesCron">0+0+22+*+*+?</prop>
+        <prop key="removeArchivedMessagesCron">0+0+23+*+*+?</prop>
+        <prop key="removeSuccessfullyTransferredMessagesCron">0+0+*+*+*+?+2030-2040</prop>
+        <prop key="removeArchivedMessageEntriesCron">0+30+23+?+*+SUN</prop>
+        
+        <!-- time limits, in seconds, for messages to be considered "OLD" in the message operations -->
+        <prop key="archiveMessagesOldLimit">1209600</prop> <!--14 days -->
+        <prop key="removeArchivedMessagesOldLimit">1209600</prop> <!--14 days -->
+        <prop key="removeArchivedMessageEntriesOldLimit">1209600</prop> <!--14 days -->
+      
+    </osgix:cm-properties>
+    
+</beans>

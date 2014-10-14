@@ -19,6 +19,7 @@
 package se.inera.axel.shs.broker.messagestore;
 
 import se.inera.axel.shs.mime.ShsMessage;
+import se.inera.axel.shs.xml.label.ShsLabel;
 import se.inera.axel.shs.xml.label.Status;
 
 import java.io.InputStream;
@@ -49,12 +50,43 @@ public interface MessageLogService {
      */
 	ShsMessageEntry saveMessage(ShsMessage message);
 
+
     /**
+     * Saves a message to the physical message store and returns a log entry
+     * containing header values and routing status of the message.
+     * A txId only be used once (in one transaction), use the other methods to make updates to the entry.
+     *
+     * @param label An shs label previously parsed from the stream.
+     * @param mimeMessageStream The message stream as it enters the server.
+     * @return A log entry that should be used during message routing.
+     * @throws MessageAlreadyExistsException if the same txId is reused in another transaction.
+     */
+    ShsMessageEntry saveMessageStream(ShsLabel label, InputStream mimeMessageStream);
+
+
+
+	/**
+     * Deletes a message from the physical message store and returns a log entry
+     * containing header values and routing status of the message.
+     * A txId only be used once (in one transaction), use the other methods to make updates to the entry.
+     *
+     * @param messageEntry The message as it enters the server.
+     * @return A log entry that should be used during message routing.
+     * @throws MessageNotFoundException if the txId does not have a message
+     */
+
+
+    void deleteMessage(ShsMessageEntry messageEntry);
+
+
+	/**
      * Loads a message from the physical message store given a message log entry.
      * @param entry Entry representing the message.
      * @return An instance of ShsMessage that can be used to send to recipients.
      */
     ShsMessage loadMessage(ShsMessageEntry entry);
+    
+    
 
     /**
      * Loads a log entry from the transaction database
@@ -154,8 +186,9 @@ public interface MessageLogService {
     /**
      * Can be used to reset messages that have been 'stuck' in state {@link MessageState#FETCHING_IN_PROGRESS}
      * for more than an hour. These messages are set to state {@link MessageState#RECEIVED} again.
+     * @return Number of messages released.
      */
-    void releaseStaleFetchingInProgress();
+    int releaseStaleFetchingInProgress();
 
 
     /**
@@ -167,8 +200,35 @@ public interface MessageLogService {
      */
     Iterable<ShsMessageEntry> listMessages(String shsTo, Filter filter);
 
-    ShsMessageEntry saveMessageStream(InputStream mimeMessageStream);
-
+    /**
+     * Archive messages that are older than a certain amount of time.
+     *  
+     * @param messageAgeInSeconds, decides when a message is considered old
+     */
+    int archiveMessages(long messageAgeInSeconds);
+    
+    /**
+     * Removes messages that have been archived for a certain amount of time.
+     * 
+     * @param messageAgeInSeconds, decides when a message is considered old
+     * @return Number of messages removed.
+     */
+    int removeArchivedMessages(long messageAgeInSeconds);
+    
+    /**
+     * Removes messages that has been successfully transferred.
+     *
+     * @return Number of messages removed.
+     */
+    int removeSuccessfullyTransferredMessages();
+   
+    /**
+     * Removes archived message entries without a  message attached.
+     *
+     * @param messageAgeInSeconds
+     * @return Number of messages removed.
+     */
+    int removeArchivedMessageEntries(long messageAgeInSeconds);
 
     class Filter {
         Date since;
@@ -201,7 +261,7 @@ public interface MessageLogService {
         public void setNoAck(Boolean noAck) {
             this.noAck = noAck;
         }
-
+        
         public Status getStatus() {
             return status;
         }

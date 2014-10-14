@@ -18,44 +18,59 @@
  */
 package se.inera.axel.shs.broker.rs.internal;
 
-import com.natpryce.makeiteasy.Maker;
+import org.apache.camel.CamelExecutionException;
 import org.apache.camel.EndpointInject;
+import org.apache.camel.Exchange;
+import org.apache.camel.Expression;
+import org.apache.camel.Processor;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.component.http.HttpOperationFailedException;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.test.AvailablePortFinder;
 import org.apache.camel.test.spring.MockEndpointsAndSkip;
 import org.apache.camel.testng.AbstractCamelTestNGSpringContextTests;
+import org.apache.commons.httpclient.util.HttpURLConnection;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import se.inera.axel.shs.broker.agreement.AgreementService;
 import se.inera.axel.shs.broker.directory.DirectoryService;
 import se.inera.axel.shs.broker.messagestore.MessageLogService;
-import se.inera.axel.shs.broker.messagestore.ShsMessageEntry;
 import se.inera.axel.shs.broker.routing.ShsRouter;
+import se.inera.axel.shs.exception.MissingAgreementException;
+import se.inera.axel.shs.exception.MissingDeliveryExecutionException;
 import se.inera.axel.shs.mime.ShsMessage;
-import se.inera.axel.shs.xml.label.ShsLabelMaker;
-import se.inera.axel.shs.xml.label.TransferType;
+import se.inera.axel.shs.mime.ShsMessageMaker;
+import se.inera.axel.shs.processor.ResponseMessageBuilder;
+import se.inera.axel.shs.processor.ShsHeaders;
+import se.inera.axel.shs.xml.label.SequenceType;
+import se.inera.axel.shs.xml.label.ShsLabel;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.natpryce.makeiteasy.MakeItEasy.*;
-import static org.apache.camel.builder.SimpleBuilder.simple;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static se.inera.axel.shs.mime.ShsMessageMaker.ShsMessage;
 import static se.inera.axel.shs.mime.ShsMessageMaker.ShsMessageInstantiator.label;
 import static se.inera.axel.shs.xml.label.ShsLabelMaker.ShsLabel;
-import static se.inera.axel.shs.xml.label.ShsLabelMaker.ShsLabelInstantiator.to;
-import static se.inera.axel.shs.xml.label.ShsLabelMaker.ShsLabelInstantiator.transferType;
-import static se.inera.axel.shs.xml.label.ShsLabelMaker.To;
+import static se.inera.axel.shs.xml.label.ShsLabelMaker.ShsLabelInstantiator.sequenceType;
 
 @ContextConfiguration
-@MockEndpointsAndSkip("http:shsServer|shs:local")
+@MockEndpointsAndSkip("http4://shsServer.*|shs:local")
 public class SynchBrokerRouteBuilderTest extends AbstractCamelTestNGSpringContextTests {
 
     static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SynchBrokerRouteBuilderTest.class);
-
-    public SynchBrokerRouteBuilderTest() {
-    }
 
     @Autowired
     ShsRouter shsRouter;
@@ -66,107 +81,174 @@ public class SynchBrokerRouteBuilderTest extends AbstractCamelTestNGSpringContex
     @Autowired
     DirectoryService directoryService;
 
+    @Autowired
+    AgreementService agreementService;
+
+    @Value("${shsRsPathPrefix}")
+    private String shsRsPathPrefix;
+
     @Produce(context = "shs-receiveservice")
     ProducerTemplate camel;
 
-    @EndpointInject(uri = "mock:http:shsServer")
+    @EndpointInject(uri = "mock:http4:shsServer")
     MockEndpoint shsServerEndpoint;
 
     @EndpointInject(uri = "mock:shs:local")
     MockEndpoint shsLocalEndpoint;
 
-    @DirtiesContext
-    @Test
-    public void sendingSynchRequestWithLocalReceiver() throws Exception {
-        shsLocalEndpoint.expectedMessageCount(1);
+    /**
+     * Builds a reply ShsMessage from a request ShsMessage.
+     */
+    final Expression replyShsMessageBuilder = new Expression() {
 
-        ShsMessage testMessage = make(createSynchMessageWithLocalReceiver());
-        ShsMessageEntry entry = messageLogService.saveMessage(testMessage);
+    	/**
+    	 * Creates new instance of reply ShsLabel and ShsMessage which is required so that
+    	 * the unit tests can verify both the request and the reply object. Otherwise,
+    	 * the reply would overwrite the request.
+    	 */
+		@Override
+		public <T> T evaluate(Exchange exchange, Class<T> type) {
 
+			ShsMessage request = exchange.getIn().getBody(ShsMessage.class);
+			ShsLabel requestLabel = request.getLabel();
+
+			// Create new instance of ShsLabel
+			ResponseMessageBuilder rmb = new ResponseMessageBuilder();
+			ShsLabel replyLabel = rmb.buildReplyLabel(requestLabel);
+			
+			// Create new instance of ShsMessage
+			ShsMessage replyShsMessage = make(a(ShsMessage, with(label, replyLabel)));
+			replyShsMessage.getLabel().setSequenceType(SequenceType.REPLY);
+			
+			T reply = exchange.getContext().getTypeConverter().convertTo(type, replyShsMessage);
+			
+			return reply;
+		}
+	};
+
+    static {
+        if (System.getProperty("shsRsHttpEndpoint.port") == null) {
+            int port = AvailablePortFinder.getNextAvailable();
+            System.setProperty("shsRsHttpEndpoint.port", Integer.toString(port));
+        }
+
+        System.setProperty("shsRsHttpEndpoint",
+                String.format("jetty://http://localhost:%s", System.getProperty("shsRsHttpEndpoint.port")));
+    }
+
+    @BeforeClass
+    public void beforeClass() {
+    }
+
+	@BeforeMethod
+	public void beforeMethod() {
+    	shsLocalEndpoint.returnReplyBody(replyShsMessageBuilder);
+    	shsServerEndpoint.returnReplyBody(replyShsMessageBuilder);
+	}
+
+    private void routeToRemoteNode() {
+        when(shsRouter.isLocal(any(se.inera.axel.shs.xml.label.ShsLabel.class))).thenReturn(false);
+        when(shsRouter.resolveEndpoint(any(ShsLabel.class)))
+                .thenReturn("http://localhost:"
+                            + System.getProperty("shsRsHttpEndpoint.port")
+                            + shsRsPathPrefix);
+    }
+
+    private void routeToLocalNode() {
         when(shsRouter.isLocal(any(se.inera.axel.shs.xml.label.ShsLabel.class))).thenReturn(true);
+    }
 
-        String response = camel.requestBody("direct-vm:shs:synch", entry, String.class);
+	@DirtiesContext
+    @Test
+    public void sendShouldReturnResponseWhenSendingToLocalReceiver() throws InterruptedException {
+        shsLocalEndpoint.expectedMessageCount(1);
+        routeToLocalNode();
+
+        final ShsMessage requestShsMessage = makeRequestShsMessage();
+		ShsMessage responseShsMessage = camel.requestBody("direct-vm:shs:synch", requestShsMessage, ShsMessage.class);
+        Assert.assertNotNull(responseShsMessage);
+        Assert.assertEquals(responseShsMessage.getLabel().getSequenceType(), SequenceType.REPLY);
 
         shsLocalEndpoint.assertIsSatisfied();
     }
 
     @DirtiesContext
     @Test
-    public void sendingSynchRequestWithKnownReceiver() throws Exception {
-        shsServerEndpoint.expectedMessageCount(1);
-        shsServerEndpoint.expectedMessagesMatches(simple("${body.dataParts[0]?.dataHandler.content} == '" + ShsLabelMaker.DEFAULT_TEST_BODY + "'"));
+    public void sendShouldReturnResponseWhenSendingToRemoteReceiver() throws InterruptedException {
+    	shsServerEndpoint.expectedMessageCount(1);
+        routeToRemoteNode();
 
-        ShsMessage testMessage = make(createSynchMessageWithKnownReceiver());
-        ShsMessageEntry entry = messageLogService.saveMessage(testMessage);
-
-        String response = camel.requestBody("direct-vm:shs:synch", entry, String.class);
+        final ShsMessage requestShsMessage = makeRequestShsMessage();
+		ShsMessage responseShsMessage = camel.requestBody("direct-vm:shs:synch", requestShsMessage, ShsMessage.class);
+        Assert.assertNotNull(responseShsMessage);
+        Assert.assertEquals(responseShsMessage.getLabel().getSequenceType(), SequenceType.REPLY);
 
         shsServerEndpoint.assertIsSatisfied();
     }
 
+    @DirtiesContext
+    @Test
+    public void requestShouldNotBeRoutedWhenAgreementValidationFails() {
+        final ShsMessage requestShsMessage = makeRequestShsMessage();
 
-//    @DirtiesContext
-//    @Test
-//    public void testSimulateErrorUsingInterceptors() throws Exception {
-//        // first find the route we need to advice. Since we only have one route
-//        // then just grab the first from the list
-//        RouteDefinition route = context.getRouteDefinitions().get(0);
-//
-//        // advice the route by enriching it with the route builder where
-//        // we add a couple of interceptors to help simulate the error
-//        route.adviceWith(context, new RouteBuilder() {
-//            @Override
-//            public void configure() throws Exception {
-//                // intercept sending to http and detour to our processor instead
-//                interceptSendToEndpoint("http://*")
-//                    // skip sending to the real http when the detour ends
-//                    .skipSendToOriginalEndpoint()
-//                    .addCommonName(new SimulateHttpErrorProcessor());
-//
-//                // intercept sending to ftp and detour to the mock instead
-//                interceptSendToEndpoint("ftp://*")
-//                    // skip sending to the real ftp endpoint
-//                    .skipSendToOriginalEndpoint()
-//                    .to("mock:ftp");
-//            }
-//        });
-//
-//        // our mock should receive the message
-//        MockEndpoint mock = getMockEndpoint("mock:ftp");
-//        mock.expectedBodiesReceived("Camel rocks");
-//
-//        // start the test by creating a file that gets picked up by the route
-//        template.sendBodyAndHeader(file, "Camel rocks", Exchange.FILE_NAME, "hello.txt");
-//
-//        // assert our test passes
-//        assertMockEndpointsSatisfied();
-//    }
+		// Simulate a failure in route processing by means of throwing an exception
+		doThrow(new MissingAgreementException("no agreement found")).when(
+                agreementService).validateAgreement(any(ShsLabel.class));
 
-//    private class SimulateHttpErrorProcessor implements Processor {
-//
-//        public void addCommonName(Exchange exchange) throws Exception {
-//            // simulate the error by thrown the exception
-//            throw new ConnectException("Simulated connection error");
-//        }
-//
-//    }
+        reset(shsRouter);
 
-    private Maker<ShsMessage> createSynchMessageWithLocalReceiver() {
-        return a(ShsMessage,
-                with(label, a(ShsLabel,
-                        with(to, a(To,
-                                with(ShsLabelMaker.ToInstantiator.value, "0000000000"))),
-                        with(transferType, TransferType.SYNCH))));
+        try {
+            camel.requestBody("direct-vm:shs:synch", requestShsMessage);
+            Assert.fail("Did not throw exception when expected to");
+        } catch (Exception e) {
+            assertThat(e.getCause(), instanceOf(MissingAgreementException.class));
+        }
+        verify(shsRouter, never()).isLocal(any(se.inera.axel.shs.xml.label.ShsLabel.class));
     }
 
-    private Maker<ShsMessage> createSynchMessageWithKnownReceiver() {
+    @DirtiesContext
+    @Test
+    public void whenRemoteNodeReturnsMessageHandlingErrorMissingDeliveryExecutionExceptionShouldBeThrown() {
+        routeToRemoteNode();
 
-        return a(ShsMessage,
-                with(label, a(ShsLabel,
-                        with(transferType, TransferType.SYNCH),
-                        with(to, a(To,
-                                with(ShsLabelMaker.ToInstantiator.value, "1111111111"))))));
+        final ShsMessage requestShsMessage = makeRequestShsMessage();
+        camel.requestBody("direct-vm:shs:synch", requestShsMessage, String.class);
+
+        shsServerEndpoint.whenAnyExchangeReceived(new Processor() {
+            @Override
+            public void process(Exchange exchange) throws Exception {
+                MissingAgreementException missingAgreementException = new MissingAgreementException();
+                exchange.getIn().setHeader(ShsHeaders.X_SHS_ERRORCODE, missingAgreementException.getErrorCode());
+
+                Map<String, String> httpHeaders = new HashMap<>();
+                httpHeaders.put(ShsHeaders.X_SHS_ERRORCODE, missingAgreementException.getErrorCode());
+
+                HttpOperationFailedException httpOperationFailedException = new HttpOperationFailedException("http://shsServer",
+                        HttpURLConnection.HTTP_BAD_REQUEST,
+                        "Bad request",
+                        null,
+                        httpHeaders,
+                        missingAgreementException.getMessage());
+
+                throw httpOperationFailedException;
+            }
+        });
+
+        try {
+            camel.requestBody("direct-vm:shs:synch", requestShsMessage);
+            Assert.fail("Did not throw exception when expected to");
+        } catch (CamelExecutionException e) {
+            assertThat(e.getCause(), is(instanceOf(MissingDeliveryExecutionException.class)));
+        }
     }
 
-
+    private ShsMessage makeRequestShsMessage() {
+    	ShsLabel label = make(a(ShsLabel,
+                with(sequenceType, SequenceType.REQUEST)));
+    	
+    	ShsMessage shsMessage =
+	            make(a(ShsMessage,
+	                    with(ShsMessageMaker.ShsMessageInstantiator.label, label)));
+		return shsMessage;
+    }
 }

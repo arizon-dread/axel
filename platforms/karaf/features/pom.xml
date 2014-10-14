@@ -3,17 +3,24 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>karaf</artifactId>
-        <groupId>se.inera.axel</groupId>
+        <groupId>se.inera.axel.karaf</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>se.inera.axel.karaf</groupId>
     <artifactId>features</artifactId>
 
     <name>Axel :: Platforms :: Karaf :: Features</name>
     <description>Provides a Karaf "features" file describing Axel's features.</description>
 
-    <dependencies></dependencies>
+    <dependencies>
+
+        <dependency>
+            <groupId>se.inera.axel</groupId>
+            <artifactId>monitoring</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+    </dependencies>
 
     <build>
         <resources>

@@ -40,6 +40,7 @@
                 <exclude>etc/system.properties</exclude>
                 <exclude>etc/users.properties</exclude>
                 <exclude>etc/org.apache.karaf.features.cfg</exclude>
+                <exclude>etc/org.ops4j.pax.url.mvn.cfg</exclude>
                 <exclude>etc/org.ops4j.pax.logging.cfg</exclude>
                 <exclude>LICENSE</exclude>
                 <exclude>NOTICE</exclude>
@@ -56,6 +57,9 @@
             <includes>
                 <include>bin/*</include>
             </includes>
+			<excludes>
+		        <exclude>bin/setenv</exclude>
+			</excludes>
             <fileMode>0755</fileMode>
         </fileSet>
 
@@ -96,9 +100,21 @@
             <includes>
                 <include>**/*</include>
             </includes>
+            <excludes>
+                <exclude>bin/**</exclude>
+            </excludes>
             <outputDirectory>/</outputDirectory>
             <fileMode>0644</fileMode>
-            <filtered>true</filtered>
+        	<filtered>true</filtered>
+        </fileSet>
+
+        <fileSet>
+            <directory>src/main/distribution</directory>
+            <includes>
+                <include>bin/**</include>
+            </includes>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>0755</fileMode>
         </fileSet>
 
         <fileSet>
@@ -106,6 +122,25 @@
             <outputDirectory>/system</outputDirectory>
         </fileSet>
 
+        <fileSet>
+            <directory>target/dependencies/docs-${project.version}</directory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+            <excludes>
+                <exclude>**/*.sh</exclude>
+            </excludes>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>target/dependencies/docs-${project.version}</directory>
+            <includes>
+                <include>**/*.sh</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
     </fileSets>
 
     <files>

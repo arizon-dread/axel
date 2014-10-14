@@ -18,13 +18,12 @@
  */
 package se.inera.axel.shs.broker.messagestore;
 
+import org.apache.commons.lang.SerializationUtils;
 import se.inera.axel.shs.xml.label.ShsLabel;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.UUID;
-
-import org.apache.commons.lang.SerializationUtils;
 
 /**
  * Entity that represents an SHS message as routed in the broker and
@@ -43,6 +42,8 @@ public class ShsMessageEntry implements Serializable {
 
     private Date stateTimeStamp;
 
+    private Date arrivalTimeStamp;
+
     private String statusCode;
 
     private String statusText;
@@ -50,16 +51,13 @@ public class ShsMessageEntry implements Serializable {
     private int retries;
 
     private boolean acknowledged;
+    
+    private boolean archived;
 
     public ShsMessageEntry() {
 
     }
 
-    // NOTE!!!
-    //
-    // PERFORMANCE WARNING!
-    // 
-    // Makes deep copy by means of serialization which is more costly in terms of performance.
 	public static ShsMessageEntry newInstance(ShsMessageEntry shsMessageEntry) {
 		return (ShsMessageEntry) SerializationUtils.clone(shsMessageEntry);
 	}
@@ -87,7 +85,15 @@ public class ShsMessageEntry implements Serializable {
         this.acknowledged = acknowledged;
     }
 
-    public ShsLabel getLabel() {
+    public boolean isArchived() {
+		return archived;
+	}
+
+	public void setArchived(boolean archived) {
+		this.archived = archived;
+	}
+
+	public ShsLabel getLabel() {
         return label;
     }
 
@@ -143,6 +149,14 @@ public class ShsMessageEntry implements Serializable {
         this.retries = retries;
     }
 
+    public Date getArrivalTimeStamp() {
+        return arrivalTimeStamp;
+    }
+
+    public void setArrivalTimeStamp(Date arrivalTimeStamp) {
+        this.arrivalTimeStamp = arrivalTimeStamp;
+    }
+
     public static ShsMessageEntry createNewEntry(ShsLabel label) {
         return new ShsMessageEntry(label);
     }
@@ -156,6 +170,7 @@ public class ShsMessageEntry implements Serializable {
                 ", stateTimeStamp=" + stateTimeStamp +
                 ", statusCode=" +statusCode +
                 ", statusText=" +statusText +
+                ", arrivalTimeStamp=" + arrivalTimeStamp +
                 ", retries=" + retries +
                 '}';
     }

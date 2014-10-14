@@ -46,9 +46,7 @@
         </property>
     </bean>
 
-    <mongo:mongo id="mongo" host="${mongodb.host}" port="${mongodb.port}" />
-
-   	<mongo:db-factory id="mongoDbFactory" dbname="${mongodb.dbname}" mongo-ref="mongo" />
+    <mongo:db-factory id="mongoDbFactory" uri="${mongodb.uri}" />
 
     <util:list id="pluginRegistries" value-type="se.inera.axel.shs.broker.routing.ShsPluginRegistration">
     </util:list>
@@ -65,6 +63,8 @@
             <property name="nodeId" value="${nodeId}" />
             <property name="organizationNumber" value="${orgId}" />
             <property name="externalReceiveServiceUrl" value="n/a" />
+            <property name="groupId" value="se.inera.axel" />
+            <property name="artifactId" value="axel-webconsole" />
     </bean>
 
 </beans>

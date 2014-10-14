@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2013 Inera AB (http://www.inera.se)
+
+    This file is part of Inera Axel (http://code.google.com/p/inera-axel).
+
+    Inera Axel is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Inera Axel is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:http="http://cxf.apache.org/transports/http/configuration"
+       xmlns:jaxws="http://cxf.apache.org/jaxws" xmlns:ctx="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://cxf.apache.org/transports/http/configuration http://cxf.apache.org/schemas/configuration/http-conf.xsd
+       http://cxf.apache.org/jaxws http://cxf.apache.org/schemas/jaxws.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       ">
+
+    <import resource="classpath:META-INF/cxf/cxf.xml"/>
+
+    <ctx:mbean-export/>
+    <ctx:mbean-server/>
+
+    <bean id="ssekHeaderInterceptor" class="se.inera.axel.ssek.common.SSEKHeaderInterceptor">
+    </bean>
+
+    <jaxws:endpoint id="registerMedicalCertificateImpl"
+        implementor="se.inera.axel.ssek.impl.RegisterMedicalCertificateImpl"
+        address="/ssek/RegisterMedicalCertificate"
+        >
+        <jaxws:inInterceptors>
+            <ref bean="ssekHeaderInterceptor" />
+        </jaxws:inInterceptors>
+        <jaxws:dataBinding>
+            <bean class="org.apache.cxf.jaxb.JAXBDataBinding">
+                <property name="extraClass">
+                    <list>
+                        <value>se.inera.axel.ssek.common.schema.ssek.SSEK</value>
+                    </list>
+                </property>
+            </bean>
+        </jaxws:dataBinding>
+    </jaxws:endpoint>
+
+    <jaxws:endpoint id="helloWorldEndpoint"
+                    implementor="#helloWorldPortType"
+                    address="/ssek/helloworld"
+                    >
+        <jaxws:inInterceptors>
+            <ref bean="ssekHeaderInterceptor" />
+        </jaxws:inInterceptors>
+        <jaxws:dataBinding>
+            <bean class="org.apache.cxf.jaxb.JAXBDataBinding">
+                <property name="extraClass">
+                    <list>
+                        <value>se.inera.axel.ssek.common.schema.ssek.SSEK</value>
+                    </list>
+                </property>
+            </bean>
+        </jaxws:dataBinding>
+    </jaxws:endpoint>
+
+    <bean id="helloWorldPortType" class="se.inera.axel.ssek.impl.HelloWorldPortTypeImpl"/>
+</beans>
