@@ -24,12 +24,15 @@ import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.inera.axel.shs.processor.ShsMessageMarshaller;
+import se.inera.axel.shs.client.ShsMessageRequestEntity;
 import se.inera.axel.shs.mime.ShsMessage;
+import se.inera.axel.shs.processor.ShsMessageMarshaller;
 
 import javax.mail.util.SharedByteArrayInputStream;
 import javax.mail.util.SharedFileInputStream;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
 
 @Converter
 public class ShsMessageTypeConverter {

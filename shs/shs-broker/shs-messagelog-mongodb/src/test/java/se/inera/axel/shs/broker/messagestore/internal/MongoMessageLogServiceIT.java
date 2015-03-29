@@ -47,7 +47,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import static com.natpryce.makeiteasy.MakeItEasy.*;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static se.inera.axel.shs.mime.ShsMessageMaker.ShsMessage;
 import static se.inera.axel.shs.xml.label.ShsLabelMaker.*;
 import static se.inera.axel.shs.xml.label.ShsLabelMaker.ShsLabelInstantiator.*;

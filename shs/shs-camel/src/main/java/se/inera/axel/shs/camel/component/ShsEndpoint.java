@@ -21,51 +21,134 @@ package se.inera.axel.shs.camel.component;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.impl.ScheduledPollEndpoint;
+import org.apache.camel.spi.ExceptionHandler;
+import org.apache.camel.util.ObjectHelper;
+import se.inera.axel.shs.camel.ShsMessageBinding;
+import se.inera.axel.shs.camel.SimpleShsMessageBinding;
+import se.inera.axel.shs.client.MessageListConditions;
+import se.inera.axel.shs.client.ShsClient;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Represents a HelloWorld endpoint.
+ * Represents an SHS endpoint.
  */
-public class ShsEndpoint extends DefaultEndpoint {
-	private ShsExceptionHandler exceptionHandler;
-	private String destinationUri;
+public class ShsEndpoint extends ScheduledPollEndpoint {
 
-    public ShsEndpoint() {
-    }
+    String to;
+    String from;
+    ShsClient client;
+    ShsMessageBinding shsMessageBinding;
+    Map<String, Object> parameters;
 
-    public ShsEndpoint(String uri, ShsComponent component) {
+    public ShsEndpoint(String uri, ShsComponent component, ShsClient client, Map<String, Object> parameters)
+            throws Exception
+    {
         super(uri, component);
+        this.client = client;
+        this.parameters = parameters;
+
+        shsMessageBinding = new SimpleShsMessageBinding();
+        component.setProperties(this, parameters);
+
+
     }
 
-    public ShsEndpoint(String endpointUri) {
-        super(endpointUri);
+    @Override
+    public boolean isLenientProperties() {
+        return true;
     }
+
+    @Override
+    public ShsComponent getComponent() {
+        return (ShsComponent)super.getComponent();
+    }
+
 
     public Producer createProducer() throws Exception {
+
+        ObjectHelper.notNull(getClient(), "client");
+        ObjectHelper.notEmpty(getClient().getRsUrl(), "rsUrl");
+
         return new ShsProducer(this);
     }
 
     public Consumer createConsumer(Processor processor) throws Exception {
-        return new ShsConsumer(this, processor);
+
+        ObjectHelper.notNull(getClient(), "client");
+        ObjectHelper.notEmpty(getClient().getDsUrl(), "'dsUrl'");
+        ObjectHelper.notEmpty(getTo(), "'to'");
+
+        /* first copy parameter map since we don't want to consume it for each consumer */
+        Map<String, Object> parameters = new HashMap();
+        parameters.putAll(this.parameters);
+
+
+        /* configure exception handler */
+        ExceptionHandler exceptionHandler =
+                getComponent().getAndRemoveParameter(parameters, "exceptionHandler", ExceptionHandler.class);
+
+        if (exceptionHandler == null) {
+            exceptionHandler = new DefaultShsExceptionHandler(getClient());
+        }
+        getComponent().setProperties(exceptionHandler, parameters);
+
+
+        /* configure message list criterias */
+        MessageListConditions conditions =
+                getComponent().resolveAndRemoveReferenceParameter(parameters, "conditions", MessageListConditions.class);
+        if (conditions == null) {
+            conditions = new MessageListConditions();
+        } else {
+            conditions = conditions.copy();
+        }
+
+        getComponent().setProperties(conditions, parameters);
+
+
+        ShsPollingConsumer shsPollingConsumer = new ShsPollingConsumer(this, processor);
+        configureConsumer(shsPollingConsumer);
+        shsPollingConsumer.setExceptionHandler(exceptionHandler);
+        shsPollingConsumer.setConditions(conditions);
+
+        return shsPollingConsumer;
     }
 
     public boolean isSingleton() {
         return true;
     }
 
-	public ShsExceptionHandler getExceptionHandler() {
-		return exceptionHandler;
-	}
+    public String getTo() {
+        return to;
+    }
 
-	public void setExceptionHandler(ShsExceptionHandler exceptionHandler) {
-		this.exceptionHandler = exceptionHandler;
-	}
+    public void setTo(String to) {
+        this.to = to;
+    }
 
-	public String getDestinationUri() {
-		return destinationUri;
-	}
+    public String getFrom() {
+        return from;
+    }
 
-	public void setDestinationUri(String uri) {
-		this.destinationUri = uri;
-	}
+    public void setFrom(String from) {
+        this.from = from;
+    }
+
+    public ShsClient getClient() {
+        return client;
+    }
+
+    public void setClient(ShsClient client) {
+        this.client = client;
+    }
+
+    public ShsMessageBinding getShsMessageBinding() {
+        return shsMessageBinding;
+    }
+
+    public void setShsMessageBinding(ShsMessageBinding shsMessageBinding) {
+        this.shsMessageBinding = shsMessageBinding;
+    }
 }

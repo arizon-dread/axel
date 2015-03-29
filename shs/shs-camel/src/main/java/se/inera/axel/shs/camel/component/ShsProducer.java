@@ -19,86 +19,72 @@
 package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.Processor;
-import org.apache.camel.ProducerTemplate;
 import org.apache.camel.impl.DefaultProducer;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
+import se.inera.axel.shs.client.ShsClient;
+import se.inera.axel.shs.exception.IllegalMessageStructureException;
+import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
 
-import java.util.Map;
-
 /**
- * The HelloWorld producer.
+ * Camel SHS Message producer.
  */
 public class ShsProducer extends DefaultProducer {
     private static final transient Logger log = LoggerFactory.getLogger(ShsProducer.class);
-    private ShsEndpoint endpoint;
-    private ProducerTemplate producerTemplate;
-    
+
     public ShsProducer(ShsEndpoint endpoint) {
         super(endpoint);
-        this.endpoint = endpoint;
-        this.producerTemplate = endpoint.getCamelContext().createProducerTemplate();
     }
 
-    public void process(final Exchange inExchange) throws Exception {
-    	Exchange returnedExchange = producerTemplate.send(getDestinationUri(inExchange), ExchangePattern.InOut, new Processor() {
+    @Override
+    public void process(final Exchange exchange) throws Exception {
 
-			@Override
-			public void process(Exchange exchange) throws Exception {
-				Object body = inExchange.getIn().getBody();
+        ShsMessage shsMessage = getEndpoint().getShsMessageBinding().toShsMessage(exchange);
 
-				exchange.getIn().setBody(body);
-			}	
-		});
-
-		Object body = getBody(returnedExchange);
-		log.debug("Returned body {}", body);
-		inExchange.getIn().setBody(body);
-
-        Map<String, Object> headers = returnedExchange.getOut().getHeaders();
-        for (String key: headers.keySet()) {
-            if (key.toLowerCase().startsWith("x-shs")) {
-                inExchange.getIn().setHeader(key, headers.get(key));
-            }
+        if (shsMessage == null || shsMessage.getLabel() == null) {
+            throw new IllegalMessageStructureException("Camel exchange can not be evaluated as an ShsMessage");
         }
 
-        if (returnedExchange.getProperty(ShsHeaders.LABEL) != null) {
-            inExchange.setProperty(ShsHeaders.LABEL, returnedExchange.getProperty(ShsHeaders.LABEL));
+        switch (shsMessage.getLabel().getTransferType()) {
+            case ASYNCH:
+                doAsynchSend(exchange, shsMessage);
+                break;
+            case SYNCH:
+                doSynchSend(exchange, shsMessage);
+                break;
+            default:
+                throw new IllegalMessageStructureException("TransferType must be specified on message");
         }
 
-		if (isException(returnedExchange)) {
-			handleException(inExchange, returnedExchange);
-		}
 	}
 
-	private void handleException(final Exchange inExchange,
-			Exchange returnedExchange) {
-		endpoint.getExceptionHandler().handleException(inExchange, returnedExchange);
-	}
+    private void doAsynchSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
+        ShsClient shsClient = getShsClient();
 
-	private boolean isException(Exchange returnedExchange) {
-		return endpoint.getExceptionHandler().isException(returnedExchange);
-	}
+        String txId = shsClient.send(shsMessage);
+        exchange.getIn().setBody(txId);
+        exchange.getIn().setHeader(ShsHeaders.X_SHS_TXID, txId);
+    }
 
-	private String getDestinationUri(Exchange exchange) {
-		String destinationUri = exchange.getIn().getHeader(ShsHeaders.DESTINATION_URI, String.class);
-		
-		if (StringUtils.isBlank(destinationUri)) {
-			destinationUri = endpoint.getDestinationUri(); 
-		}
-		
-		return destinationUri;
-	}
+    private void doSynchSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
+        ShsClient shsClient = getShsClient();
 
-	private Object getBody(Exchange returnedExchange) {
-		if (returnedExchange.hasOut()) {
-			return returnedExchange.getOut().getBody();
-		} else {
-			return returnedExchange.getIn().getBody();
-		}
-	}
+        ShsMessage response = shsClient.request(shsMessage);
+        exchange.getIn().setBody(response);
+
+        new DefaultShsMessageToCamelProcessor().process(exchange);
+    }
+
+
+    @Override
+    public ShsEndpoint getEndpoint() {
+        return (ShsEndpoint)super.getEndpoint();
+    }
+
+    public ShsClient getShsClient() {
+        return getEndpoint().getClient();
+    }
+
 }
