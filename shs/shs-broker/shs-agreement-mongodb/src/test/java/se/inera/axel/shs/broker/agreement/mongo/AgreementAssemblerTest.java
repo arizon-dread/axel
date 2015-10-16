@@ -18,50 +18,11 @@
  */
 package se.inera.axel.shs.broker.agreement.mongo;
 
-import static com.natpryce.makeiteasy.MakeItEasy.a;
-import static com.natpryce.makeiteasy.MakeItEasy.an;
-import static com.natpryce.makeiteasy.MakeItEasy.listOf;
-import static com.natpryce.makeiteasy.MakeItEasy.make;
-import static com.natpryce.makeiteasy.MakeItEasy.with;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.Billing;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.General;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.Open;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.PerExchange;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.PerPeriod;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.PerVolume;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.Product;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.QoS;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.Shs;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.ShsAgreement;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.Starttime;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.Stoptime;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.BillingInstantiator.perExchangeOrPerVolumeOrPerPeriod;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.GeneralInstantiator.qoS;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.OpenInstantiator.starttimeOrStoptime;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.QoSInstantiator.open;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.ShsAgreementInstantiator.general;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.ShsAgreementInstantiator.shs;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.ShsInstantiator.billing;
-import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.ShsInstantiator.products;
-
-import java.util.Arrays;
-import java.util.List;
-
+import com.natpryce.makeiteasy.Maker;
 import org.dozer.DozerBeanMapper;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 import org.unitils.reflectionassert.ReflectionAssert;
-
 import se.inera.axel.shs.broker.agreement.mongo.model.Billing;
 import se.inera.axel.shs.broker.agreement.mongo.model.Confirm;
 import se.inera.axel.shs.broker.agreement.mongo.model.MongoShsAgreement;
@@ -70,7 +31,23 @@ import se.inera.axel.shs.broker.directory.Agreement;
 import se.inera.axel.shs.xml.agreement.ShsAgreement;
 import se.inera.axel.shs.xml.agreement.Starttime;
 
-import com.natpryce.makeiteasy.Maker;
+import java.util.Arrays;
+import java.util.List;
+
+import static com.natpryce.makeiteasy.MakeItEasy.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.*;
+import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.BillingInstantiator.perExchangeOrPerVolumeOrPerPeriod;
+import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.GeneralInstantiator.qoS;
+import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.OpenInstantiator.starttimeOrStoptime;
+import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.QoSInstantiator.open;
+import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.ShsAgreementInstantiator.general;
+import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.ShsAgreementInstantiator.shs;
+import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.ShsInstantiator.billing;
+import static se.inera.axel.shs.xml.agreement.ShsAgreementMaker.ShsInstantiator.products;
 
 @SuppressWarnings("unchecked")
 public class AgreementAssemblerTest {

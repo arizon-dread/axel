@@ -22,21 +22,16 @@
 package se.inera.axel.shs.broker.messagestore.internal;
 
 import com.natpryce.makeiteasy.Maker;
-
-import org.apache.camel.spring.javaconfig.test.JavaConfigContextLoader;
 import org.hamcrest.*;
 import org.hamcrest.collection.IsIterableWithSize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.MongoDbFactory;
-import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import se.inera.axel.shs.broker.messagestore.ShsMessageEntry;
 import se.inera.axel.shs.xml.label.ShsLabel;
 
@@ -54,9 +49,7 @@ import static se.inera.axel.shs.xml.label.ShsLabelMaker.ShsLabelInstantiator.txI
  * @author Jan Hallonstén, R2M
  *
  */
-@ContextConfiguration(locations =
-        {"se.inera.axel.shs.broker.messagestore.internal.MongoDBTestContextConfig"},
-        loader = JavaConfigContextLoader.class)
+@ContextConfiguration(classes = MongoDBTestContextConfig.class)
 public class MessageLogRepositoryIT extends AbstractTestNGSpringContextTests {
 	
 	@Autowired(required = true)
