@@ -81,9 +81,9 @@ public class SynchBrokerRouteBuilder extends RouteBuilder {
         .setHeader(Exchange.HTTP_URI, method("shsRouter", "resolveEndpoint(${body.label})"))
         .beanRef("messageLogService", "loadMessage")
         .choice().when(PredicateBuilder.startsWith(header(Exchange.HTTP_URI), constant("https")))
-            .to("https4://shsServer?httpClient.soTimeout=300000&disableStreamCache=true&sslContextParameters=shsRsSslContext&x509HostnameVerifier=allowAllHostnameVerifier")
+            .to("https4://shsServer?httpClient.socketTimeout=300000&disableStreamCache=true&sslContextParameters=shsRsSslContext&x509HostnameVerifier=allowAllHostnameVerifier")
         .otherwise()
-            .to("http4://shsServer?httpClient.soTimeout=300000&disableStreamCache=true")
+            .to("http4://shsServer?httpClient.socketTimeout=300000&disableStreamCache=true")
         .end();
 
 
