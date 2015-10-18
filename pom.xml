@@ -6,13 +6,13 @@
     <version>2.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Axel</name>
-    <url>http://code.google.com/p/inera-axel</url>
+    <url>https://github.com/Predictly/axel</url>
 
     <inceptionYear>2012</inceptionYear>
 
     <organization>
-        <name>Inera</name>
-        <url>http://www.inera.se</url>
+        <name>Predictly AB</name>
+        <url>http://www.predictly.se</url>
     </organization>
 
     <licenses>
@@ -26,15 +26,15 @@
     <developers>
         <developer>
             <name>Björn Bength</name>
-            <email>bjorn.bength@r2m.se</email>
-            <organization>R2M</organization>
-            <organizationUrl>http://www.r2m.se</organizationUrl>
+            <email>bjorn.bength@predictly.se</email>
+            <organization>Predictly AB</organization>
+            <organizationUrl>http://www.predictly.se</organizationUrl>
         </developer>
         <developer>
             <name>Jan Hallonsten</name>
-            <email>jan.hallonsten@r2m.se</email>
-            <organization>R2M</organization>
-            <organizationUrl>http://www.r2m.se</organizationUrl>
+            <email>jan.hallonsten@predictly.se</email>
+            <organization>Predictly AB</organization>
+            <organizationUrl>http://www.predictly.se</organizationUrl>
         </developer>
         <developer>
             <name>Ekkehart Lötzsch</name>
