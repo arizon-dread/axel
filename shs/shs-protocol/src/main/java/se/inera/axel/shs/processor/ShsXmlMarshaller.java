@@ -47,7 +47,7 @@ public abstract class ShsXmlMarshaller<T> {
             XMLReader xmlReader = super.poll();
             if (xmlReader == null) {
                 try {
-                    log.debug("Creating an XMLReader instance to bee pooled.");
+                    log.trace("Creating an XMLReader instance to bee pooled.");
                     xmlReader = XMLReaderFactory.createXMLReader();
                     xmlReader.setEntityResolver(new DtdEntityResolver());
                 } catch (Exception e) {
