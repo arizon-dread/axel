@@ -124,6 +124,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-jetty</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>se.inera.axel</groupId>
             <artifactId>shs-protocol</artifactId>
         </dependency>

@@ -20,6 +20,7 @@ package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -28,10 +29,16 @@ import org.apache.camel.testng.CamelTestSupport;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.Test;
+import se.inera.axel.shs.camel.DefaultCamelToShsMessageProcessor;
+import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
+import se.inera.axel.shs.camel.ShsMessageDataFormat;
+import se.inera.axel.shs.camel.SimpleShsMessageBinding;
 import se.inera.axel.shs.client.ShsClient;
+import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.TransferType;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -44,6 +51,9 @@ public class ShsComponentIT extends CamelTestSupport {
 	@EndpointInject(uri = "mock:result")
 	MockEndpoint resultEndpoint;
 
+    @EndpointInject(uri = "mock:shsSink")
+    MockEndpoint shsSink;
+
     @Override
     protected JndiRegistry createRegistry() throws Exception {
         JndiRegistry reg = super.createRegistry();
@@ -54,6 +64,8 @@ public class ShsComponentIT extends CamelTestSupport {
         client.setDsUrl("http://localhost:8585/shs/ds");
 
         reg.bind("testAxel", client);
+
+        reg.bind("shsDataFormat", new ShsMessageDataFormat());
 
         return reg;
     }
@@ -76,74 +88,46 @@ public class ShsComponentIT extends CamelTestSupport {
                 .to(resultEndpoint);
 
 
+                /* mocking shs server */
+                from("jetty:http://localhost:8585/shs/rs")
+                .convertBodyTo(ShsMessage.class)
+                .bean(SimpleShsMessageBinding.class)
+                .transform(header(ShsHeaders.TXID));
 
-
-
-
-
-                from("file:/tmp/in/")
-                .setHeader(ShsHeaders.TO, constant("0000000000.filesystem"))
-                .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
-                .setHeader(ShsHeaders.TRANSFERTYPE, constant(TransferType.ASYNCH))
-                .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
-                .setHeader(ShsHeaders.DATAPART_FILENAME, header(Exchange.FILE_NAME_ONLY))
-                .setHeader(ShsHeaders.DATAPART_CONTENTLENGTH, header(Exchange.FILE_LENGTH))
-                .setHeader(ShsHeaders.DATAPART_TYPE, simple("${file:name.ext}"))
-                .to("shs:http://localhost:8585/shs/rs")
-                .log("Delivered message with txId = ${body}.");
-
-
-
-                from("shs:http://localhost:8585/shs/ds/0000000000.filesystem?" +
-                        "producttype=00000000-0000-0000-0000-000000000000")
-                .setHeader(Exchange.FILE_NAME, header(ShsHeaders.TXID))
-                .to("file:/tmp/out");
-
-
-
-
-
-
-
-
+//                from("file:/tmp/in/")
+//                .setHeader(ShsHeaders.TO, constant("0000000000.filesystem"))
+//                .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
+//                .setHeader(ShsHeaders.TRANSFERTYPE, constant(TransferType.ASYNCH))
+//                .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
+//                .setHeader(ShsHeaders.DATAPART_FILENAME, header(Exchange.FILE_NAME_ONLY))
+//                .setHeader(ShsHeaders.DATAPART_CONTENTLENGTH, header(Exchange.FILE_LENGTH))
+//                .setHeader(ShsHeaders.DATAPART_TYPE, simple("${file:name.ext}"))
+//                .to("shs:testAxel")
+//                .log("Delivered message with txId = ${body}.");
+//
+//
+//                from("shs:testAxel?to=0000000000.filesystem&" +
+//                        "producttype=00000000-0000-0000-0000-000000000000")
+//                .setHeader(Exchange.FILE_NAME, header(ShsHeaders.TXID))
+//                .to("file:/tmp/out");
 
 			}
 		};
 	}
-	
-    @DirtiesContext
-   	@Test(enabled = true)
-   	public void pollFiles() throws Exception {
-        Thread.sleep(20000);
-    }
 
 	@DirtiesContext
-	@Test(enabled = false)
-	public void testShouldThrowException() throws Exception {
+	@Test(enabled = true)
+	public void sendingAsynchMessageShouldReturnTxId() throws Exception {
 
         resultEndpoint.expectedMessageCount(1);
 
-        Map<String, Object> headers = new HashMap<String, Object>();
-//        headers.put(ShsHeaders.FROM, DEFAULT_TEST_FROM);
-//        headers.put(ShsHeaders.TO, DEFAULT_TEST_TO);
-//        headers.put(ShsHeaders.SUBJECT, DEFAULT_TEST_SUBJECT);
-//        headers.put(ShsHeaders.TRANSFERTYPE, TransferType.ASYNCH);
-//        headers.put(ShsHeaders.PRODUCT_ID, DEFAULT_TEST_PRODUCT_ID);
-//        headers.put(ShsHeaders.DATAPART_CONTENTTYPE, "text/xml");
-//        headers.put(ShsHeaders.DATAPART_FILENAME, "MyXmlFile.xml");
-//        headers.put(ShsHeaders.DATAPART_CONTENTLENGTH, "BODY".length());
-//        headers.put(ShsHeaders.DATAPART_TYPE, "xml");
-
-        template.sendBodyAndHeaders("direct:start", "BODY", headers);
+        template.sendBody("direct:start", "BODY");
 
         resultEndpoint.assertIsSatisfied(1000);
         Exchange exchange = resultEndpoint.getExchanges().get(0);
         assertIsInstanceOf(String.class, exchange.getIn().getBody());
         UUID.fromString(exchange.getIn().getBody(String.class));
-        System.out.println("txid: " + UUID.fromString(exchange.getIn().getBody(String.class)));
-        //assertTrue();
-
     }
-	
+
 
 }
