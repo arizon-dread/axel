@@ -42,7 +42,7 @@ public abstract class ShsXmlMarshaller<T> {
 
         @Override
         public XMLReader poll() {
-            log.debug("Size of XMLReader pool: {}", XmlReaderPool.this.size());
+            log.trace("Size of XMLReader pool: {}", XmlReaderPool.this.size());
 
             XMLReader xmlReader = super.poll();
             if (xmlReader == null) {
