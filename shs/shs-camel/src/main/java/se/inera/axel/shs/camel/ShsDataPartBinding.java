@@ -58,7 +58,7 @@ public class ShsDataPartBinding {
         dataPart.setFileName(fileName);
 
         Long contentLength = null;
-        if (headers.containsKey(ShsHeaders.DATAPART_CONTENTLENGTH)) {
+        if (headers.containsKey(ShsHeaders.DATAPART_CONTENTLENGTH) && headers.get(ShsHeaders.DATAPART_CONTENTLENGTH) != null) {
             contentLength = Long.parseLong("" + headers.get(ShsHeaders.DATAPART_CONTENTLENGTH));
         }
 

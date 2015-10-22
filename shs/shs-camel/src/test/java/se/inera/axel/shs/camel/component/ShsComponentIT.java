@@ -36,6 +36,8 @@ import se.inera.axel.shs.camel.SimpleShsMessageBinding;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
+import se.inera.axel.shs.xml.label.MessageType;
+import se.inera.axel.shs.xml.label.SequenceType;
 import se.inera.axel.shs.xml.label.TransferType;
 
 import java.io.InputStream;
@@ -80,7 +82,7 @@ public class ShsComponentIT extends CamelTestSupport {
 				from("direct:start")
 				.setHeader(ShsHeaders.TO, constant("0000000000.junit"))
                 .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
-                .setHeader(ShsHeaders.TRANSFERTYPE, constant(TransferType.ASYNCH))
+                .setHeader(ShsHeaders.TRANSFERTYPE, constant(TransferType.SYNCH))
                 .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
                 .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
                 .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
@@ -92,7 +94,18 @@ public class ShsComponentIT extends CamelTestSupport {
                 from("jetty:http://localhost:8585/shs/rs")
                 .convertBodyTo(ShsMessage.class)
                 .bean(SimpleShsMessageBinding.class)
-                .transform(header(ShsHeaders.TXID));
+                .choice()
+                .when(header(ShsHeaders.TRANSFERTYPE).isEqualTo(TransferType.ASYNCH))
+                    .transform(header(ShsHeaders.TXID))
+                .otherwise()
+                    .setHeader(ShsHeaders.SEQUENCETYPE, constant(SequenceType.REPLY))
+                    .log(LoggingLevel.WARN, "Status: ${in.header.ShsLabelStatus}")
+                    .bean(SimpleShsMessageBinding.class, "toShsMessage")
+                    .convertBodyTo(InputStream.class)
+                .end()
+                .convertBodyTo(String.class);
+
+
 
 //                from("file:/tmp/in/")
 //                .setHeader(ShsHeaders.TO, constant("0000000000.filesystem"))
@@ -121,12 +134,12 @@ public class ShsComponentIT extends CamelTestSupport {
 
         resultEndpoint.expectedMessageCount(1);
 
-        template.sendBody("direct:start", "BODY");
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(ShsHeaders.TRANSFERTYPE, TransferType.ASYNCH);
+        String txId = (String)template.requestBodyAndHeaders("direct:start", "BODY", headers);
 
         resultEndpoint.assertIsSatisfied(1000);
-        Exchange exchange = resultEndpoint.getExchanges().get(0);
-        assertIsInstanceOf(String.class, exchange.getIn().getBody());
-        UUID.fromString(exchange.getIn().getBody(String.class));
+        UUID.fromString(txId);
     }
 
 

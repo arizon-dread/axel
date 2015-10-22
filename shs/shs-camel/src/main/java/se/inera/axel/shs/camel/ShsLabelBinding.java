@@ -43,18 +43,18 @@ public class ShsLabelBinding {
             label.setDatetime( new Date());
         }
 
-        label.setStatus((Status)headers.get(ShsHeaders.STATUS));
+        label.setStatus(convertToStatus(headers.get(ShsHeaders.STATUS)));
         if (label.getStatus() == null) {
             label.setStatus(Status.PRODUCTION);
         }
 
-        label.setTransferType((TransferType)headers.get(ShsHeaders.TRANSFERTYPE));
+        label.setTransferType(convertToTransferType(headers.get(ShsHeaders.TRANSFERTYPE)));
         if (label.getTransferType() == null) {
             label.setTransferType(TransferType.ASYNCH);
         }
 
 
-        label.setSequenceType((SequenceType)headers.get(ShsHeaders.SEQUENCETYPE));
+        label.setSequenceType(convertToSequenceType(headers.get(ShsHeaders.SEQUENCETYPE)));
         if (label.getSequenceType() == null) {
             if (label.getTransferType() == TransferType.ASYNCH) {
                 label.setSequenceType(SequenceType.EVENT);
@@ -64,7 +64,7 @@ public class ShsLabelBinding {
         }
 
 
-        label.setMessageType((MessageType)headers.get(ShsHeaders.MESSAGETYPE));
+        label.setMessageType(convertToMessageType(headers.get(ShsHeaders.MESSAGETYPE)));
         if (label.getMessageType() == null) {
             label.setMessageType(MessageType.SIMPLE);
         }
@@ -130,6 +130,46 @@ public class ShsLabelBinding {
 
     }
 
+
+    private static Status convertToStatus(Object status) {
+        if (status == null)
+            return null;
+        else if (status instanceof String)
+            return Status.valueOf(((String) status).toUpperCase());
+        else if (status instanceof Status)
+            return (Status)status;
+        else throw new IllegalArgumentException("Cannot convert status: " + status);
+    }
+
+    private static TransferType convertToTransferType(Object transferType) {
+        if (transferType == null)
+            return null;
+        else if (transferType instanceof String)
+            return TransferType.valueOf(((String) transferType).toUpperCase());
+        else if (transferType instanceof TransferType)
+            return (TransferType) transferType;
+        else throw new IllegalArgumentException("Cannot convert transferType: " + transferType);
+    }
+
+    private static SequenceType convertToSequenceType(Object sequenceType) {
+        if (sequenceType == null)
+            return null;
+        else if (sequenceType instanceof String)
+            return SequenceType.valueOf(((String) sequenceType).toUpperCase());
+        else if (sequenceType instanceof SequenceType)
+            return (SequenceType) sequenceType;
+        else throw new IllegalArgumentException("Cannot convert sequenceType: " + sequenceType);
+    }
+
+    private static MessageType convertToMessageType(Object messageType) {
+        if (messageType == null)
+            return null;
+        else if (messageType instanceof String)
+            return MessageType.valueOf(((String) messageType).toUpperCase());
+        else if (messageType instanceof MessageType)
+            return (MessageType) messageType;
+        else throw new IllegalArgumentException("Cannot convert messageType: " + messageType);
+    }
 
     private Map<String, String> createMetaMap(ShsLabel label) {
         Map<String, String> metaMap = null;
