@@ -38,6 +38,7 @@ import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.MessageType;
 import se.inera.axel.shs.xml.label.SequenceType;
+import se.inera.axel.shs.xml.label.ShsLabel;
 import se.inera.axel.shs.xml.label.TransferType;
 
 import java.io.InputStream;
@@ -82,7 +83,6 @@ public class ShsComponentIT extends CamelTestSupport {
 				from("direct:start")
 				.setHeader(ShsHeaders.TO, constant("0000000000.junit"))
                 .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
-                .setHeader(ShsHeaders.TRANSFERTYPE, constant(TransferType.SYNCH))
                 .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
                 .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
                 .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
@@ -92,37 +92,15 @@ public class ShsComponentIT extends CamelTestSupport {
 
                 /* mocking shs server */
                 from("jetty:http://localhost:8585/shs/rs")
-                .convertBodyTo(ShsMessage.class)
                 .bean(SimpleShsMessageBinding.class)
                 .choice()
                 .when(header(ShsHeaders.TRANSFERTYPE).isEqualTo(TransferType.ASYNCH))
                     .transform(header(ShsHeaders.TXID))
                 .otherwise()
                     .setHeader(ShsHeaders.SEQUENCETYPE, constant(SequenceType.REPLY))
-                    .log(LoggingLevel.WARN, "Status: ${in.header.ShsLabelStatus}")
+                    .transform(constant("SVAR"))
                     .bean(SimpleShsMessageBinding.class, "toShsMessage")
-                    .convertBodyTo(InputStream.class)
-                .end()
-                .convertBodyTo(String.class);
-
-
-
-//                from("file:/tmp/in/")
-//                .setHeader(ShsHeaders.TO, constant("0000000000.filesystem"))
-//                .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
-//                .setHeader(ShsHeaders.TRANSFERTYPE, constant(TransferType.ASYNCH))
-//                .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
-//                .setHeader(ShsHeaders.DATAPART_FILENAME, header(Exchange.FILE_NAME_ONLY))
-//                .setHeader(ShsHeaders.DATAPART_CONTENTLENGTH, header(Exchange.FILE_LENGTH))
-//                .setHeader(ShsHeaders.DATAPART_TYPE, simple("${file:name.ext}"))
-//                .to("shs:testAxel")
-//                .log("Delivered message with txId = ${body}.");
-//
-//
-//                from("shs:testAxel?to=0000000000.filesystem&" +
-//                        "producttype=00000000-0000-0000-0000-000000000000")
-//                .setHeader(Exchange.FILE_NAME, header(ShsHeaders.TXID))
-//                .to("file:/tmp/out");
+                .end();
 
 			}
 		};
@@ -136,11 +114,34 @@ public class ShsComponentIT extends CamelTestSupport {
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(ShsHeaders.TRANSFERTYPE, TransferType.ASYNCH);
-        String txId = (String)template.requestBodyAndHeaders("direct:start", "BODY", headers);
+        template.sendBodyAndHeaders("direct:start", "BODY", headers);
 
         resultEndpoint.assertIsSatisfied(1000);
+        Exchange exchange = resultEndpoint.getReceivedExchanges().get(0);
+        String txId = exchange.getIn().getMandatoryBody(String.class);
+
         UUID.fromString(txId);
     }
 
+    @DirtiesContext
+    @Test(enabled = true)
+    public void sendingSynchMessageShouldReturnResponseMessage() throws Exception {
+
+        resultEndpoint.expectedMessageCount(1);
+
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(ShsHeaders.TRANSFERTYPE, TransferType.SYNCH);
+        template.sendBodyAndHeaders("direct:start", "BODY", headers);
+
+        resultEndpoint.assertIsSatisfied(1000);
+        Exchange exchange = resultEndpoint.getReceivedExchanges().get(0);
+        String response = exchange.getIn().getMandatoryBody(String.class);
+        assertEquals(response, "SVAR");
+
+        ShsLabel label = exchange.getProperty(ShsHeaders.LABEL, ShsLabel.class);
+        assertNotNull(label);
+        assertEquals(label.getSequenceType(), SequenceType.REPLY);
+
+    }
 
 }
