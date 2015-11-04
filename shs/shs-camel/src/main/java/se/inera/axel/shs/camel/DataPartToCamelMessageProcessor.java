@@ -33,31 +33,17 @@ import se.inera.axel.shs.processor.ShsHeaders;
 
 public class DataPartToCamelMessageProcessor implements Processor {
 
+	ShsDataPartBinding dataPartBinding = new ShsDataPartBinding();
+
 	@Override
 	public void process(Exchange exchange) throws Exception {
 		
 		Message in = exchange.getIn();
-		Map<String, Object> headers = in.getHeaders();
-		DataPart dataPart = in.getBody(DataPart.class);		
-			
-		headers.put(ShsHeaders.DATAPART_CONTENTLENGTH, dataPart.getContentLength());
-		headers.put(ShsHeaders.DATAPART_CONTENTTYPE, dataPart.getContentType());
-		headers.put(ShsHeaders.DATAPART_TRANSFERENCODING, dataPart.getTransferEncoding());
-		headers.put(ShsHeaders.DATAPART_TYPE, dataPart.getDataPartType());
-        if (StringUtils.isNotBlank(dataPart.getFileName())) {
-		    headers.put(ShsHeaders.DATAPART_FILENAME, dataPart.getFileName());
-        }
+		DataPart dataPart = in.getBody(DataPart.class);
 
-        if (dataPart.getContentType() != null) {
-            Pattern pattern = Pattern.compile(".+;[ ]*charset=(.+?)([ ]*;.+)*");
-            Matcher matcher = pattern.matcher(dataPart.getContentType());
-            if (matcher.matches()) {
-                String charset = matcher.group(1);
-                headers.put(Exchange.CHARSET_NAME, charset);
-            }
-        }
-
-		in.setBody(dataPart.getDataHandler().getInputStream());
+		Message message = dataPartBinding.fromDataPart(dataPart);
+		message.setHeaders(in.getHeaders());
+		exchange.setIn(message);
 		
 	}
 

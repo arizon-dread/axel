@@ -1,6 +1,8 @@
 package se.inera.axel.shs.camel;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
 import org.apache.commons.lang.StringUtils;
 import se.inera.axel.shs.exception.IllegalDatapartContentException;
 import se.inera.axel.shs.mime.DataPart;
@@ -8,6 +10,7 @@ import se.inera.axel.shs.processor.InputStreamDataSource;
 import se.inera.axel.shs.processor.ShsHeaders;
 
 import javax.activation.DataHandler;
+import java.io.File;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -15,24 +18,30 @@ import java.util.regex.Pattern;
 
 public class ShsDataPartBinding {
 
-    public DataPart toDataPart(InputStream body, Map<String, Object> headers) throws Exception {
+    public DataPart toDataPart(Message in) throws Exception {
+
+        Object body = in.getBody();
+
+        if (body instanceof DataPart) {
+            return (DataPart)body;
+        }
 
         DataPart dataPart = new DataPart();
 
-        dataPart.setDataPartType((String)headers.get(ShsHeaders.DATAPART_TYPE));
+        dataPart.setDataPartType(in.getHeader(ShsHeaders.DATAPART_TYPE, String.class));
         if (dataPart.getDataPartType() == null) {
             throw new IllegalDatapartContentException("Header '" + ShsHeaders.DATAPART_TYPE + "' must be specified");
         }
 
-        String contentType = (String)headers.get(ShsHeaders.DATAPART_CONTENTTYPE);
+        String contentType = in.getHeader(ShsHeaders.DATAPART_CONTENTTYPE, String.class);
         if (contentType == null) {
-            contentType = (String)headers.get(Exchange.CONTENT_TYPE);
+            contentType = in.getHeader(Exchange.CONTENT_TYPE, String.class);
         }
 
 
         if (contentType != null) {
             if (!contentType.contains("charset")) {
-                String charset = (String)headers.get(Exchange.CHARSET_NAME);
+                String charset = in.getHeader(Exchange.CHARSET_NAME, String.class);
                 if (charset != null) {
                     contentType += ";charset=" + charset;
                 }
@@ -41,9 +50,9 @@ public class ShsDataPartBinding {
 
         dataPart.setContentType(contentType);
 
-        String fileName = (String)headers.get(ShsHeaders.DATAPART_FILENAME);
+        String fileName = in.getHeader(ShsHeaders.DATAPART_FILENAME, String.class);
         if (fileName == null)
-            fileName = (String)headers.get(Exchange.FILE_NAME_ONLY);
+            fileName = in.getHeader(Exchange.FILE_NAME_ONLY, String.class);
 
         if (fileName == null) {
             if (contentType != null) {
@@ -55,16 +64,20 @@ public class ShsDataPartBinding {
             }
         }
 
+        if (fileName == null) {
+            if (body instanceof File) {
+                fileName = ((File) body).getName();
+            }
+        }
         dataPart.setFileName(fileName);
 
-        Long contentLength = null;
-        if (headers.containsKey(ShsHeaders.DATAPART_CONTENTLENGTH) && headers.get(ShsHeaders.DATAPART_CONTENTLENGTH) != null) {
-            contentLength = Long.parseLong("" + headers.get(ShsHeaders.DATAPART_CONTENTLENGTH));
-        }
-
+        Long contentLength = in.getHeader(ShsHeaders.DATAPART_CONTENTLENGTH, Long.class);
         if (contentLength == null) {
-            if (headers.containsKey(Exchange.CONTENT_LENGTH)) {
-                contentLength = Long.parseLong("" + headers.get(Exchange.CONTENT_LENGTH));
+            contentLength = in.getHeader(Exchange.CONTENT_LENGTH, Long.class);
+        }
+        if (contentLength == null) {
+            if (body instanceof File) {
+                contentLength = ((File) body).length();
             }
         }
 
@@ -73,16 +86,14 @@ public class ShsDataPartBinding {
         }
 
 
-        dataPart.setContentLength(contentLength);
+        dataPart.setContentLength(contentLength.longValue());
         dataPart.setDataHandler(
                 new DataHandler(
-                        new InputStreamDataSource(body,
+                        new InputStreamDataSource(
+                                in.getMandatoryBody(InputStream.class),
                                 dataPart.getContentType(), dataPart.getFileName())));
 
-        String transferEncoding = (String)headers.get(ShsHeaders.DATAPART_TRANSFERENCODING);
-        if (transferEncoding == null) {
-            transferEncoding = "binary";
-        }
+        String transferEncoding = in.getHeader(ShsHeaders.DATAPART_TRANSFERENCODING, "binary", String.class);
 
         if ("binary".equalsIgnoreCase(transferEncoding) == false
                 && "base64".equalsIgnoreCase(transferEncoding) == false)
@@ -91,14 +102,15 @@ public class ShsDataPartBinding {
         }
 
         dataPart.setTransferEncoding(transferEncoding);
-
-        //headers.remove("ShsDataPart*");
-
         return dataPart;
 
     }
 
-    public InputStream fromDataPart(DataPart dataPart, Map<String, Object> headers) throws Exception {
+    public Message fromDataPart(DataPart dataPart) throws Exception {
+
+        Message out = new DefaultMessage();
+        Map<String, Object> headers = out.getHeaders();
+
 
         headers.put(ShsHeaders.DATAPART_CONTENTLENGTH, dataPart.getContentLength());
         headers.put(ShsHeaders.DATAPART_CONTENTTYPE, dataPart.getContentType());
@@ -117,7 +129,25 @@ public class ShsDataPartBinding {
             }
         }
 
-        return dataPart.getDataHandler().getInputStream();
+        headers.put(ShsHeaders.DATAPART_CONTENTLENGTH, dataPart.getContentLength());
+        headers.put(ShsHeaders.DATAPART_CONTENTTYPE, dataPart.getContentType());
+        headers.put(ShsHeaders.DATAPART_TRANSFERENCODING, dataPart.getTransferEncoding());
+        headers.put(ShsHeaders.DATAPART_TYPE, dataPart.getDataPartType());
+        if (StringUtils.isNotBlank(dataPart.getFileName())) {
+            headers.put(ShsHeaders.DATAPART_FILENAME, dataPart.getFileName());
+        }
+
+        if (dataPart.getContentType() != null) {
+            Pattern pattern = Pattern.compile(".+;[ ]*charset=(.+?)([ ]*;.+)*");
+            Matcher matcher = pattern.matcher(dataPart.getContentType());
+            if (matcher.matches()) {
+                String charset = matcher.group(1);
+                headers.put(Exchange.CHARSET_NAME, charset);
+            }
+        }
+
+        out.setBody(dataPart.getDataHandler().getInputStream());
+        return out;
     }
 
 }
