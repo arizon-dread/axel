@@ -72,8 +72,9 @@ public class ShsProducer extends DefaultProducer {
         ShsClient shsClient = getShsClient();
 
         ShsMessage response = shsClient.request(shsMessage);
+        exchange.getIn().setBody(response);
 
-        getEndpoint().getShsMessageBinding().fromShsMessage(response, exchange);
+        new DefaultShsMessageToCamelProcessor().process(exchange);
     }
 
 

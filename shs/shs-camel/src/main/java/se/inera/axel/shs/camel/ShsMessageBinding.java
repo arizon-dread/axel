@@ -1,4 +1,4 @@
-package se.inera.axel.shs.camel.component;
+package se.inera.axel.shs.camel;
 
 import org.apache.camel.Exchange;
 import se.inera.axel.shs.exception.IllegalMessageStructureException;
