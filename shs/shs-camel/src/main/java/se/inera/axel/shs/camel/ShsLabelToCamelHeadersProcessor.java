@@ -43,7 +43,7 @@ public class ShsLabelToCamelHeadersProcessor implements Processor {
 	public void process(Exchange exchange) throws Exception {
 		ShsLabel label = exchange.getProperty(ShsHeaders.LABEL, ShsLabel.class);
 		exchange.removeProperty(ShsHeaders.LABEL);
-		exchange.getIn().setHeaders(labelBinding.fromLabel(label));
+		exchange.getIn().setHeaders(labelBinding.fromLabel(label).getHeaders());
 	}
 
 

@@ -1,6 +1,8 @@
 package se.inera.axel.shs.camel;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import se.inera.axel.shs.exception.IllegalDatapartContentException;
 import se.inera.axel.shs.exception.IllegalMessageStructureException;
 import se.inera.axel.shs.mime.DataPart;
 import se.inera.axel.shs.mime.ShsMessage;
@@ -17,12 +19,11 @@ public abstract class ShsMessageBinding {
 
 
     /**
-     * Creates an shs message from the camel exchange using {@link #extractLabel(org.apache.camel.Exchange)} and
-     * {@link #extractDataParts(org.apache.camel.Exchange)} followed by {@link #updateLabelContent(se.inera.axel.shs.mime.ShsMessage)}.
+     * Creates an shs message from the camel exchange using {@link ShsLabelBinding#toLabel(Message)} and
+     * {@link #extractDataParts(org.apache.camel.Exchange)}.
      * <p/>
      *
-     * To make a custom shs message binding, consider overriding {@link #extractDataParts(org.apache.camel.Exchange) first,
-     * before overriding this method.
+     * To make a custom shs message binding, consider overriding {@link #extractDataParts(org.apache.camel.Exchange)
      *
      * @param exchange
      * @return
@@ -40,7 +41,7 @@ public abstract class ShsMessageBinding {
             shsMessage = new ShsMessage();
         }
 
-        shsMessage.setLabel(extractLabel(exchange));
+        shsMessage.setLabel(labelBinding.toLabel(exchange.getIn()));
 
         shsMessage.setDataParts(extractDataParts(exchange));
 
@@ -50,29 +51,42 @@ public abstract class ShsMessageBinding {
     }
 
 
-    public abstract void fromShsMessage(ShsMessage shsMessage, Exchange exchange) throws Exception;
-
-
     /**
-     * Create label from headers on the message
-     *
+     * Convert an shs message to a camel exchange. <p/>
+     * If the shs message contains one data part, it is converted with {@link ShsDataPartBinding#fromDataPart(DataPart)},
+     * otherwise the body is set to the list of data parts contained in the shs message.
+     * @param shsMessage
      * @param exchange
-     * @return
      * @throws Exception
      */
-    protected ShsLabel extractLabel(Exchange exchange) throws Exception {
+    public void fromShsMessage(ShsMessage shsMessage, Exchange exchange) throws Exception  {
+        if (shsMessage.getDataParts() == null || shsMessage.getDataParts().isEmpty())
+            throw new IllegalMessageStructureException("Message contains no data parts");
 
-        ShsLabel label = labelBinding.toLabel(exchange.getIn().getHeaders());
+        Message in = exchange.getIn();
 
-        if (label == null) {
-            throw new RuntimeException("Can't assemble shs message, no label found");
+        Message outLabel = labelBinding.fromLabel(shsMessage.getLabel());
+        in.getHeaders().putAll(outLabel.getHeaders());
+
+        if (shsMessage.getDataParts().size() == 1) {
+            DataPart dataPart = shsMessage.getDataParts().get(0);
+            Message outDp = dataPartBinding.fromDataPart(dataPart);
+            in.getHeaders().putAll(outDp.getHeaders());
+            in.setBody(outDp.getBody());
+        } else {
+            in.setBody(shsMessage.getDataParts());
+            // TODO convert every data part into a separate exchange and put the list of exchanges on the body?
+            // See GroupedExchanges in http://camel.apache.org/aggregator2.html
         }
 
-        return label;
     }
 
+
+
     /**
-     * Assumes the camel message body already is a data part or a list of data parts. <p/>
+     * If the camel message body already is a data part or a list of data parts, use them, otherwise try convertering
+     * the exchange to a data part with . <p/>
+     * TODO use product type file to automatically validate, convert and package the data parts.
      *
      * @param exchange
      * @return
@@ -82,24 +96,22 @@ public abstract class ShsMessageBinding {
 
         Object body = exchange.getIn().getBody();
 
-        List<Object> bodyList = null;
         if (body instanceof List) {
-            bodyList = (List)body;
-        }
 
-        if (bodyList != null && !bodyList.isEmpty()) {
-            for (Object bodyItem : bodyList) {
+            for (Object bodyItem : (List)body) {
                 if (bodyItem instanceof DataPart) {
                     dataParts.add((DataPart)bodyItem);
+                } else if (bodyItem instanceof Exchange) {
+
+                } else {
+                    throw new IllegalDatapartContentException("Unsupported list content: " + bodyItem);
                 }
             }
-            /* if all elements are not data parts, clear and let subclass decide */
-            if (dataParts.size() != bodyList.size()) {
-                dataParts.clear();
-            }
+
         } else if (body instanceof DataPart) {
-            DataPart dataPart = (DataPart)body;
-            dataParts.add(dataPart);
+            dataParts.add((DataPart)body);
+        } else {
+            dataParts.add(dataPartBinding.toDataPart(exchange.getIn()));
         }
 
         return dataParts;

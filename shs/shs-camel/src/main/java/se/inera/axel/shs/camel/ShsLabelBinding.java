@@ -1,6 +1,7 @@
 package se.inera.axel.shs.camel;
 
 import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.*;
 
@@ -53,9 +54,10 @@ public class ShsLabelBinding {
     }
 
 
-    public Map<String, Object> fromLabel(ShsLabel label) throws Exception {
+    public Message fromLabel(ShsLabel label) throws Exception {
+        Message out = new DefaultMessage();
+        Map<String, Object> headers = out.getHeaders();
 
-        Map<String, Object> headers = new HashMap<>();
         From from = null;
         Originator originator = null;
         if (!label.getOriginatorOrFrom().isEmpty()) {
@@ -93,7 +95,7 @@ public class ShsLabelBinding {
         if (metaMap != null)
             headers.put(ShsHeaders.META, metaMap);
 
-        return headers;
+        return out;
     }
 
     private static Map<String, String> createMetaMap(ShsLabel label) {
