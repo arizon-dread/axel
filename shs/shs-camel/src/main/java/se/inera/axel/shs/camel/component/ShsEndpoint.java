@@ -24,8 +24,6 @@ import org.apache.camel.Producer;
 import org.apache.camel.impl.ScheduledPollEndpoint;
 import org.apache.camel.spi.ExceptionHandler;
 import org.apache.camel.util.ObjectHelper;
-import se.inera.axel.shs.camel.ShsMessageBinding;
-import se.inera.axel.shs.camel.SimpleShsMessageBinding;
 import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.client.ShsClient;
 
@@ -50,7 +48,7 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         this.client = client;
         this.parameters = parameters;
 
-        shsMessageBinding = new SimpleShsMessageBinding();
+        shsMessageBinding = new DefaultShsMessageBinding();
         component.setProperties(this, parameters);
 
 

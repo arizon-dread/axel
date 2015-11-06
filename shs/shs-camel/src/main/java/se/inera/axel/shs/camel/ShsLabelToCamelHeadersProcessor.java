@@ -18,16 +18,11 @@
  */
 package se.inera.axel.shs.camel;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
+import se.inera.axel.shs.camel.component.ShsLabelBinding;
 import se.inera.axel.shs.processor.ShsHeaders;
-import se.inera.axel.shs.xml.label.From;
-import se.inera.axel.shs.xml.label.Meta;
-import se.inera.axel.shs.xml.label.Originator;
 import se.inera.axel.shs.xml.label.ShsLabel;
 
 /**

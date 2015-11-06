@@ -1,4 +1,4 @@
-package se.inera.axel.shs.camel;
+package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;

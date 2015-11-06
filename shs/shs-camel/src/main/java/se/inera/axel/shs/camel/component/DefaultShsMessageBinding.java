@@ -1,4 +1,4 @@
-package se.inera.axel.shs.camel;
+package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
@@ -8,12 +8,11 @@ import se.inera.axel.shs.mime.DataPart;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.xml.label.Content;
 import se.inera.axel.shs.xml.label.Data;
-import se.inera.axel.shs.xml.label.ShsLabel;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class ShsMessageBinding {
+public class DefaultShsMessageBinding implements ShsMessageBinding {
     ShsDataPartBinding dataPartBinding = new ShsDataPartBinding();
     ShsLabelBinding labelBinding = new ShsLabelBinding();
 
@@ -29,6 +28,7 @@ public abstract class ShsMessageBinding {
      * @return
      * @throws Exception
      */
+    @Override
     public ShsMessage toShsMessage(Exchange exchange) throws Exception  {
 
 
@@ -59,6 +59,7 @@ public abstract class ShsMessageBinding {
      * @param exchange
      * @throws Exception
      */
+    @Override
     public void fromShsMessage(ShsMessage shsMessage, Exchange exchange) throws Exception  {
         if (shsMessage.getDataParts() == null || shsMessage.getDataParts().isEmpty())
             throw new IllegalMessageStructureException("Message contains no data parts");

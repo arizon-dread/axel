@@ -18,18 +18,12 @@
  */
 package se.inera.axel.shs.camel;
 
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 
-import org.apache.camel.spi.ExceptionHandler;
-import org.apache.commons.lang.StringUtils;
+import se.inera.axel.shs.camel.component.ShsDataPartBinding;
 import se.inera.axel.shs.mime.DataPart;
-import se.inera.axel.shs.processor.ShsHeaders;
 
 public class DataPartToCamelMessageProcessor implements Processor {
 

@@ -20,8 +20,6 @@ package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.JndiRegistry;
@@ -29,19 +27,13 @@ import org.apache.camel.testng.CamelTestSupport;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.Test;
-import se.inera.axel.shs.camel.DefaultCamelToShsMessageProcessor;
-import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
 import se.inera.axel.shs.camel.ShsMessageDataFormat;
-import se.inera.axel.shs.camel.SimpleShsMessageBinding;
 import se.inera.axel.shs.client.ShsClient;
-import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
-import se.inera.axel.shs.xml.label.MessageType;
 import se.inera.axel.shs.xml.label.SequenceType;
 import se.inera.axel.shs.xml.label.ShsLabel;
 import se.inera.axel.shs.xml.label.TransferType;
 
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -92,14 +84,14 @@ public class ShsComponentIT extends CamelTestSupport {
 
                 /* mocking shs server */
                 from("jetty:http://localhost:8585/shs/rs")
-                .bean(SimpleShsMessageBinding.class)
+                .bean(DefaultShsMessageBinding.class)
                 .choice()
                 .when(header(ShsHeaders.TRANSFERTYPE).isEqualTo(TransferType.ASYNCH))
                     .transform(header(ShsHeaders.TXID))
                 .otherwise()
                     .setHeader(ShsHeaders.SEQUENCETYPE, constant(SequenceType.REPLY))
                     .transform(constant("SVAR"))
-                    .bean(SimpleShsMessageBinding.class, "toShsMessage")
+                    .bean(DefaultShsMessageBinding.class, "toShsMessage")
                 .end();
 
 			}

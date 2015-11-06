@@ -21,6 +21,7 @@ package se.inera.axel.shs.camel;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
+import se.inera.axel.shs.camel.component.ShsLabelBinding;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.ShsLabel;
 
