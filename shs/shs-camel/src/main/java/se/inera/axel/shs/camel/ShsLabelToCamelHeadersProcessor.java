@@ -20,7 +20,6 @@ package se.inera.axel.shs.camel;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-
 import se.inera.axel.shs.camel.component.ShsLabelBinding;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.ShsLabel;
@@ -38,7 +37,7 @@ public class ShsLabelToCamelHeadersProcessor implements Processor {
 	public void process(Exchange exchange) throws Exception {
 		ShsLabel label = exchange.getProperty(ShsHeaders.LABEL, ShsLabel.class);
 		exchange.removeProperty(ShsHeaders.LABEL);
-		exchange.getIn().setHeaders(labelBinding.fromLabel(label).getHeaders());
+		exchange.getIn().getHeaders().putAll(labelBinding.fromLabel(label).getHeaders());
 	}
 
 

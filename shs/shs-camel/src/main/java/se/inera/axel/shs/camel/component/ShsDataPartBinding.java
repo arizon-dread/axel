@@ -111,24 +111,6 @@ public class ShsDataPartBinding {
         Message out = new DefaultMessage();
         Map<String, Object> headers = out.getHeaders();
 
-
-        headers.put(ShsHeaders.DATAPART_CONTENTLENGTH, dataPart.getContentLength());
-        headers.put(ShsHeaders.DATAPART_CONTENTTYPE, dataPart.getContentType());
-        headers.put(ShsHeaders.DATAPART_TRANSFERENCODING, dataPart.getTransferEncoding());
-        headers.put(ShsHeaders.DATAPART_TYPE, dataPart.getDataPartType());
-        if (StringUtils.isNotBlank(dataPart.getFileName())) {
-            headers.put(ShsHeaders.DATAPART_FILENAME, dataPart.getFileName());
-        }
-
-        if (dataPart.getContentType() != null) {
-            Pattern pattern = Pattern.compile(".+;[ ]*charset=(.+?)([ ]*;.+)*");
-            Matcher matcher = pattern.matcher(dataPart.getContentType());
-            if (matcher.matches()) {
-                String charset = matcher.group(1);
-                headers.put(Exchange.CHARSET_NAME, charset);
-            }
-        }
-
         headers.put(ShsHeaders.DATAPART_CONTENTLENGTH, dataPart.getContentLength());
         headers.put(ShsHeaders.DATAPART_CONTENTTYPE, dataPart.getContentType());
         headers.put(ShsHeaders.DATAPART_TRANSFERENCODING, dataPart.getTransferEncoding());

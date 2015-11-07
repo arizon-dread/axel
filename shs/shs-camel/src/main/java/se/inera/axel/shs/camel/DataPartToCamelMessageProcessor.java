@@ -21,7 +21,6 @@ package se.inera.axel.shs.camel;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
-
 import se.inera.axel.shs.camel.component.ShsDataPartBinding;
 import se.inera.axel.shs.mime.DataPart;
 
@@ -33,11 +32,11 @@ public class DataPartToCamelMessageProcessor implements Processor {
 	public void process(Exchange exchange) throws Exception {
 		
 		Message in = exchange.getIn();
-		DataPart dataPart = in.getBody(DataPart.class);
+		DataPart dataPart = in.getMandatoryBody(DataPart.class);
 
 		Message message = dataPartBinding.fromDataPart(dataPart);
-		message.setHeaders(in.getHeaders());
-		exchange.setIn(message);
+		in.getHeaders().putAll(message.getHeaders());
+		in.setBody(message.getBody());
 		
 	}
 
