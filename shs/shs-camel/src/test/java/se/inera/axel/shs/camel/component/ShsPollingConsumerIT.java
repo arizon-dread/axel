@@ -30,6 +30,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.Test;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.processor.ShsHeaders;
+import se.inera.axel.shs.xml.message.Message;
+import se.inera.axel.shs.xml.message.ShsMessageList;
 
 @ContextConfiguration
 public class ShsPollingConsumerIT extends CamelTestSupport {
@@ -75,15 +77,17 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
                 .to("mock:result");
 
 
-                from("shs:client?to=0000000000.jmeter&status=test&producttype=confirm")
-                                .to("log:se.inera.axel.ShsPollingConsumerIT?showAll=true")
-                                .to("file:/tmp/out/confirms")
-                				.to("mock:result");
+                ShsMessageList list = new ShsMessageList();
+                Message m = new Message();
+                m.setTo("0000000000.jmeter");
+                m.setProduct("error");
+                m.setTxId("88B06FFC-860D-430F-B812-A0DA2EB40E9F");
 
-                from("shs:client?to=0000000000.jmeter&status=test&producttype=error")
-                        .to("log:se.inera.axel.ShsPollingConsumerIT?showAll=true")
-                        .to("file:/tmp/out/errors")
-                        .to("mock:result");
+                list.getMessage().add(m);
+                /* mocking shs server */
+                from("jetty:http://localhost:8585/shs/ds?matchOnUriPrefix=true" )
+                        .setBody(constant(list));
+
 
             }
 		};
@@ -97,7 +101,7 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
 
 //        resultEndpoint.assertIsSatisfied(1000);
 //        Exchange exchange = resultEndpoint.getExchanges().get(0);
-        Thread.sleep(100000);
+        Thread.sleep(5000);
     }
 	
 
