@@ -51,14 +51,16 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
 	@EndpointInject(uri = "mock:result")
 	MockEndpoint resultEndpoint;
 
+    int port = PortFinder.findFreePort();
+
     @Override
     protected JndiRegistry createRegistry() throws Exception {
         JndiRegistry reg = super.createRegistry();
 
 
         ShsClient client = new ShsClient();
-        client.setRsUrl("http://localhost:8585/shs/rs");
-        client.setDsUrl("http://localhost:8585/shs/ds");
+        client.setRsUrl("http://localhost:" + port + "/shs/rs");
+        client.setDsUrl("http://localhost:" + port + "/shs/ds");
 
         reg.bind("client", client);
 
@@ -92,7 +94,7 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
                 messages.put(shs1.getLabel().getTxId(), shs1);
 
                 /* mocking shs server */
-                from("jetty:http://localhost:8585/shs/ds/urn:X-shs:0000000000.junit")
+                from("jetty:http://localhost:" + port + "/shs/ds/urn:X-shs:0000000000.junit")
                     .process(new Processor() {
                         @Override
                         public void process(Exchange exchange) throws Exception {
@@ -117,7 +119,7 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
                     })
                     .convertBodyTo(String.class);
 
-                from("jetty:http://localhost:8585/shs/ds/{shsTo}/{txId}")
+                from("jetty:http://localhost:" + port + "/shs/ds/{shsTo}/{txId}")
                         .choice()
                         .when(header(Exchange.HTTP_METHOD).isEqualTo("GET"))
                         .process(new Processor() {
@@ -157,6 +159,6 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
         resultEndpoint.expectedHeaderReceived(Exchange.FILE_NAME, "88B06FFC-860D-430F-B812-A0DA2EB40E9F");
         resultEndpoint.assertIsSatisfied(4000);
     }
-	
+
 
 }

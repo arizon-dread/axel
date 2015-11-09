@@ -40,14 +40,13 @@ import java.util.UUID;
 
 @ContextConfiguration
 public class ShsComponentIT extends CamelTestSupport {
-//	@Produce(uri = "direct:start")
-//	ProducerTemplate producer;
-//
 	@EndpointInject(uri = "mock:result")
 	MockEndpoint resultEndpoint;
 
     @EndpointInject(uri = "mock:shsSink")
     MockEndpoint shsSink;
+
+    int port = PortFinder.findFreePort();
 
     @Override
     protected JndiRegistry createRegistry() throws Exception {
@@ -55,8 +54,8 @@ public class ShsComponentIT extends CamelTestSupport {
 
 
         ShsClient client = new ShsClient();
-        client.setRsUrl("http://localhost:8585/shs/rs");
-        client.setDsUrl("http://localhost:8585/shs/ds");
+        client.setRsUrl("http://localhost:" + port + "/shs/rs");
+        client.setDsUrl("http://localhost:" + port + "/shs/ds");
 
         reg.bind("testAxel", client);
 
@@ -83,7 +82,7 @@ public class ShsComponentIT extends CamelTestSupport {
 
 
                 /* mocking shs server */
-                from("jetty:http://localhost:8585/shs/rs")
+                from("jetty:http://localhost:" + port + "/shs/rs")
                 .bean(DefaultShsMessageBinding.class)
                 .choice()
                 .when(header(ShsHeaders.TRANSFERTYPE).isEqualTo(TransferType.ASYNCH))
