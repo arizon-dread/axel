@@ -29,6 +29,7 @@ import java.io.StringReader;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+
 public class DtdEntityResolver implements EntityResolver {
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DtdEntityResolver.class);
 	
@@ -42,7 +43,7 @@ public class DtdEntityResolver implements EntityResolver {
 	public InputSource resolveEntity(String publicId, String systemId)
 			throws SAXException, IOException {
 		
-		log.debug("resolveEntity({}, {})", publicId, systemId);
+		log.trace("resolveEntity({}, {})", publicId, systemId);
 		
         try {          
 

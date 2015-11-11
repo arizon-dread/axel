@@ -31,7 +31,7 @@ import java.util.ListIterator;
 
 /**
  * Converts camel header values (http headers and/or request parameters)
- * to a {@link MessageLogService.Filter} filter object suitable for listing messages.
+ * to a {@link se.inera.axel.shs.broker.messagestore.MessageLogService.Filter} filter object suitable for listing messages.
  *
  */
 public class HeaderToFilterConverter {

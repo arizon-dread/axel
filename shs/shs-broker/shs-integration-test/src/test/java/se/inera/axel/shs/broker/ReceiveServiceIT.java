@@ -230,8 +230,9 @@ public class ReceiveServiceIT extends AbstractCamelTestNGSpringContextTests {
          * @return
          */
         @Override
-        protected GenericApplicationContext createContext(Class<?> testClass) {
-            GenericApplicationContext context = super.createContext(testClass);
+        protected GenericApplicationContext createContext(Class<?> testClass, MergedContextConfiguration mergedConfig) {
+            mergedContextConfiguration = mergedConfig;
+            GenericApplicationContext context = super.createContext(testClass, mergedConfig);
             prepareContext(context, mergedContextConfiguration);
             return context;
         }

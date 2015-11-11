@@ -18,32 +18,34 @@
  */
 package se.inera.axel.shs.camel.component;
 
-import java.util.Map;
-
-import org.apache.camel.Endpoint;
 import org.apache.camel.impl.DefaultComponent;
+import org.apache.camel.util.EndpointHelper;
+import se.inera.axel.shs.client.MessageListConditions;
+import se.inera.axel.shs.client.ShsClient;
+
+import java.util.Map;
 
 /**
  * Represents the component that manages {@link ShsEndpoint}.
  */
 public class ShsComponent extends DefaultComponent {
 
-    protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        ShsEndpoint endpoint = new ShsEndpoint(uri, this);
-        
-        ShsExceptionHandler exceptionHandler = getAndRemoveParameter(parameters, "exceptionHandler", ShsExceptionHandler.class);
-        if (exceptionHandler == null) {
-        	exceptionHandler = new DefaultShsExceptionHandler();
-        }
-        setProperties(exceptionHandler, parameters);
-        
-        endpoint.setExceptionHandler(exceptionHandler);
-        
-        setProperties(endpoint, parameters);
-        
-        // TODO add remaining parameters to URI
-        endpoint.setDestinationUri(remaining);
-        
+    @Override
+    protected ShsEndpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
+        ShsClient shsClient = EndpointHelper.resolveReferenceParameter(
+                getCamelContext(), remaining, ShsClient.class, true);
+
+        setProperties(shsClient, parameters);
+
+        ShsEndpoint endpoint = new ShsEndpoint(uri, this, shsClient, parameters);
+
         return endpoint;
     }
+
+    @Override
+    public void setProperties(Object bean, Map<String, Object> parameters) throws Exception {
+        super.setProperties(bean, parameters);
+    }
+
+
 }

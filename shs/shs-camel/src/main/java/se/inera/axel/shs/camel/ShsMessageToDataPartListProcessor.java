@@ -28,7 +28,7 @@ import se.inera.axel.shs.xml.label.ShsLabel;
 
 import java.util.ArrayList;
 
-public class ShsMessageToDataParListProcessor implements Processor {
+public class ShsMessageToDataPartListProcessor implements Processor {
 
 	ShsLabelToCamelHeadersProcessor labelProcessor = new ShsLabelToCamelHeadersProcessor();
 	DataPartToCamelMessageProcessor datapartProcessor = new DataPartToCamelMessageProcessor();

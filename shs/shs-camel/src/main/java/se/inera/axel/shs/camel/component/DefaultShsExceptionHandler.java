@@ -19,9 +19,11 @@
 package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.spi.ExceptionHandler;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.exception.MissingDeliveryExecutionException;
 import se.inera.axel.shs.exception.OtherErrorException;
 import se.inera.axel.shs.exception.ShsException;
@@ -32,85 +34,87 @@ import se.inera.axel.shs.xml.label.ShsLabel;
 
 import java.io.IOException;
 
-public class DefaultShsExceptionHandler implements ShsExceptionHandler {
-	private static final Logger log = LoggerFactory.getLogger(DefaultShsExceptionHandler.class);
-	
-	private boolean isReturnError = false;
-	
-	ResponseMessageBuilder responseMessageBuilder = new ResponseMessageBuilder();
-	
-	public boolean isReturnError() {
-		return isReturnError;
-	}
+/**
+ * This exception handler converts an exception (on an exchange) to an {@link ShsException} and sends it
+ * back to the sender of the original message using the provided {@link ShsClient}.
+ *
+ * @author Björn Bength
+ */
+public class DefaultShsExceptionHandler implements ExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(DefaultShsExceptionHandler.class);
 
-	public void setReturnError(boolean isReturnError) {
-		this.isReturnError = isReturnError;
-	}
+    ResponseMessageBuilder responseMessageBuilder = new ResponseMessageBuilder();
+    ShsClient client;
 
-	public void handleException(final Exchange inExchange, final Exchange returnedExchange) {
-        ShsLabel label = inExchange.getProperty(ShsHeaders.LABEL, ShsLabel.class);
+    public DefaultShsExceptionHandler(ShsClient client) {
+        this.client = client;
+    }
 
-        if (hasException(returnedExchange)) {
-            createResponse(inExchange, createOrEnrichShsException(returnedExchange, label));
+    @Override
+    public void handleException(Throwable exception) {
+        handleException("Exception occurred during process of message", exception);
+    }
+
+    @Override
+    public void handleException(String message, Throwable exception) {
+        log.error(message, exception);
+    }
+
+    @Override
+    public void handleException(String message, Exchange exchange, Throwable exception) {
+
+        log.error(message, exception);
+
+        ShsLabel label = exchange.getProperty(ShsHeaders.LABEL, ShsLabel.class);
+        if (label == null) {
+            log.warn("Original SHS Label was not found on camel exchange, cannot continue");
+            return;
+        }
+
+        log.debug("Creating an shs error message from original message with corrId=" + label.getCorrId() +
+                " to send back to the original sender (" + label.getFrom().getValue() + ")");
+
+        ShsException shsException = createOrEnrichShsException(exchange, label);
+
+        ShsMessage errorMessage = responseMessageBuilder.buildErrorMessage(label, shsException);
+        try {
+            client.send(errorMessage);
+        } catch (Exception e) {
+            ShsLabel errorLabel = errorMessage.getLabel();
+
+            log.error("Error sending shs error message with txId=" + errorLabel.getTxId() +
+                    " back to the original sender (" + errorLabel.getTo().getValue() + ")" +
+                    " regarding message with corrId=" + label.getCorrId(), e);
         }
     }
 
-	private ShsException createOrEnrichShsException(Exchange returnedExchange, ShsLabel label) {
+    private ShsException createOrEnrichShsException(Exchange exchange, ShsLabel label) {
 
-		ShsException shsException = returnedExchange.getException(ShsException.class);
+        ShsException shsException = exchange.getException(ShsException.class);
 
-		if (shsException == null) {
-			IOException ioException = returnedExchange.getException(IOException.class);
+        if (shsException == null) {
+            IOException ioException = exchange.getException(IOException.class);
+            if (ioException != null) {
+                shsException = new MissingDeliveryExecutionException(ioException);
+            }
+        }
 
-			if (ioException != null) {
-				shsException = new MissingDeliveryExecutionException(ioException);
-			}
-		}
+        if (shsException == null) {
+            Exception exception = exchange.getException(Exception.class);
+            shsException = new OtherErrorException(exception);
+        }
 
-		if (shsException == null) {
-			Exception exception = returnedExchange.getException(Exception.class);
-			shsException = new OtherErrorException(exception);
-		}
+        if (label != null) {
+            if (StringUtils.isBlank(shsException.getContentId()) && label.getContent() != null) {
+                shsException.setContentId(label.getContent().getContentId());
+            }
 
-		if (label != null) {
-			if (StringUtils.isBlank(shsException.getContentId()) && label.getContent() != null) {
-				shsException.setContentId(label.getContent().getContentId());
-			}
-			
-			if (StringUtils.isBlank(shsException.getCorrId())) {
-				shsException.setCorrId(label.getCorrId());
-			}
-		}
-		
-		return shsException;
-	}
+            if (StringUtils.isBlank(shsException.getCorrId())) {
+                shsException.setCorrId(label.getCorrId());
+            }
+        }
 
-	private void createResponse(final Exchange inExchange,
-			ShsException shsException) {
-		if (isReturnError()) {
-			inExchange.getIn().setBody(responseMessageBuilder.buildErrorMessage(inExchange.getIn().getBody(ShsMessage.class), shsException));
-		} else {
-			inExchange.setException(shsException);
-		}
-	}
+        return shsException;
+    }
 
-	@Override
-	public boolean isException(Exchange returnedExchange) {
-		if (hasException(returnedExchange))
-			return true;
-		
-		return false;
-	}
-
-	private boolean hasException(Exchange returnedExchange) {
-		return returnedExchange.getException() != null;
-	}
-	
-	private Object getBody(Exchange exchange) {
-		if (exchange.hasOut()) {
-			return exchange.getOut().getBody();
-		} else {
-			return exchange.getIn().getBody();
-		}
-	}
 }
