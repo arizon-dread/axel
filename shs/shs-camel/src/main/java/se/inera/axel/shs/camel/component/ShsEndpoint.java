@@ -26,6 +26,8 @@ import org.apache.camel.spi.ExceptionHandler;
 import org.apache.camel.util.ObjectHelper;
 import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.client.ShsClient;
+import se.inera.axel.shs.processor.LabelValidator;
+import se.inera.axel.shs.processor.SimpleLabelValidator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +41,7 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
     String from;
     ShsClient client;
     ShsMessageBinding shsMessageBinding;
+    LabelValidator labelValidator;
     Map<String, Object> parameters;
 
     public ShsEndpoint(String uri, ShsComponent component, ShsClient client, Map<String, Object> parameters)
@@ -49,6 +52,7 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         this.parameters = parameters;
 
         shsMessageBinding = new DefaultShsMessageBinding();
+        labelValidator = new SimpleLabelValidator();
         component.setProperties(this, parameters);
 
 
@@ -148,5 +152,13 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
 
     public void setShsMessageBinding(ShsMessageBinding shsMessageBinding) {
         this.shsMessageBinding = shsMessageBinding;
+    }
+
+    public LabelValidator getLabelValidator() {
+        return labelValidator;
+    }
+
+    public void setLabelValidator(LabelValidator labelValidator) {
+        this.labelValidator = labelValidator;
     }
 }

@@ -47,6 +47,8 @@ public class ShsProducer extends DefaultProducer {
             throw new IllegalMessageStructureException("Camel exchange can not be evaluated as an ShsMessage");
         }
 
+        getEndpoint().getLabelValidator().validate(shsMessage.getLabel());
+
         switch (shsMessage.getLabel().getTransferType()) {
             case ASYNCH:
                 doAsynchSend(exchange, shsMessage);

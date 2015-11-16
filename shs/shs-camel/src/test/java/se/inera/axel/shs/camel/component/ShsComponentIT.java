@@ -72,6 +72,7 @@ public class ShsComponentIT extends CamelTestSupport {
 			public void configure() throws Exception {
 				
 				from("direct:start")
+                .setHeader(ShsHeaders.FROM, constant("0000000000.junit"))
 				.setHeader(ShsHeaders.TO, constant("0000000000.junit"))
                 .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
                 .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
