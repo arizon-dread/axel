@@ -28,7 +28,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.Test;
 import se.inera.axel.shs.camel.ShsMessageDataFormat;
-import se.inera.axel.shs.client.ShsClient;
+import se.inera.axel.shs.client.DefaultShsClient;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.SequenceType;
 import se.inera.axel.shs.xml.label.ShsLabel;
@@ -53,7 +53,7 @@ public class ShsComponentIT extends CamelTestSupport {
         JndiRegistry reg = super.createRegistry();
 
 
-        ShsClient client = new ShsClient();
+        DefaultShsClient client = new DefaultShsClient();
         client.setRsUrl("http://localhost:" + port + "/shs/rs");
         client.setDsUrl("http://localhost:" + port + "/shs/ds");
 

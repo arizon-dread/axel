@@ -4,7 +4,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 import se.inera.axel.shs.exception.MissingDeliveryExecutionException;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ResponseMessageBuilder;
@@ -12,10 +14,8 @@ import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.processor.ShsMessageListMarshaller;
 import se.inera.axel.shs.processor.ShsMessageMarshaller;
 import se.inera.axel.shs.xml.UrnAddress;
-import se.inera.axel.shs.xml.UrnProduct;
 import se.inera.axel.shs.xml.label.SequenceType;
 import se.inera.axel.shs.xml.label.ShsLabel;
-import se.inera.axel.shs.xml.label.ShsLabelMaker;
 import se.inera.axel.shs.xml.label.TransferType;
 import se.inera.axel.shs.xml.message.Data;
 import se.inera.axel.shs.xml.message.Message;
@@ -39,7 +39,7 @@ import static se.inera.axel.shs.xml.label.ShsLabelMaker.To;
 
 public class ShsClientTest {
 
-    ShsClient shsClient;
+    DefaultShsClient shsClient;
     Server server;
     ShsMessageMarshaller messageMarshaller = new ShsMessageMarshaller();
     ShsMessageListMarshaller shsMessageListMarshaller = new ShsMessageListMarshaller();
@@ -57,7 +57,7 @@ public class ShsClientTest {
             Thread.sleep(100);
         }
 
-        shsClient = new ShsClient();
+        shsClient = new DefaultShsClient();
         shsClient.setRsUrl("http://localhost:" + server.getConnectors()[0].getLocalPort() + "/shs/rs");
         shsClient.setDsUrl("http://localhost:" + server.getConnectors()[0].getLocalPort() + "/shs/ds");
 

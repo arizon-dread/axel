@@ -20,7 +20,6 @@ package se.inera.axel.shs.camel.component;
 
 import org.apache.camel.impl.DefaultComponent;
 import org.apache.camel.util.EndpointHelper;
-import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.client.ShsClient;
 
 import java.util.Map;

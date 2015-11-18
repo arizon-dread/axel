@@ -72,7 +72,6 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
     public Producer createProducer() throws Exception {
 
         ObjectHelper.notNull(getClient(), "client");
-        ObjectHelper.notEmpty(getClient().getRsUrl(), "rsUrl");
 
         return new ShsProducer(this);
     }
@@ -80,7 +79,6 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
     public Consumer createConsumer(Processor processor) throws Exception {
 
         ObjectHelper.notNull(getClient(), "client");
-        ObjectHelper.notEmpty(getClient().getDsUrl(), "'dsUrl'");
         ObjectHelper.notEmpty(getTo(), "'to'");
 
         /* first copy parameter map since we don't want to consume it for each consumer */

@@ -22,7 +22,7 @@ import org.apache.camel.AsyncCallback;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.impl.ScheduledBatchPollingConsumer;
-import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
+import se.inera.axel.shs.client.DefaultShsClient;
 import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.mime.ShsMessage;
@@ -39,16 +39,16 @@ import java.util.Queue;
  *
  * This consumer executes this loop:
  * <ol>
- *     <li>{@link ShsClient#list(String, se.inera.axel.shs.client.MessageListConditions)} with the given criteria (called conditions) to get a list of messages.</li>
+ *     <li>{@link DefaultShsClient#list(String, se.inera.axel.shs.client.MessageListConditions)} with the given criteria (called conditions) to get a list of messages.</li>
  *     <li>For each message do:
  *          <ol>
- *              <li>{@link ShsClient#fetch(String, String)} a message based on txId</li>
+ *              <li>{@link DefaultShsClient#fetch(String, String)} a message based on txId</li>
  *              <li>Convert the shs message using a "binding" to a normalized camel message</li>
  *              <li>Send it out in the camel pipeline using a newly created camel exchange.</li>
  *              <li>When exchange completes:
  *                  <ul>
- *                      <li>without errors: Ack the message using {@link ShsClient#ack(String, String)}</li>
- *                      <li>with errors: Create an shs error message and send it back to the server using {@link ShsClient#send(se.inera.axel.shs.mime.ShsMessage)} </li>
+ *                      <li>without errors: Ack the message using {@link DefaultShsClient#ack(String, String)}</li>
+ *                      <li>with errors: Create an shs error message and send it back to the server using {@link DefaultShsClient#send(se.inera.axel.shs.mime.ShsMessage)} </li>
  *                  </ul>
  *               </li>
  *          </ol>
