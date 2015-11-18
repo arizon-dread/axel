@@ -81,6 +81,14 @@ public class ShsComponentIT extends CamelTestSupport {
 				.to("shs:testAxel")
                 .to(resultEndpoint);
 
+                from("direct:start")
+                        .setHeader(ShsHeaders.FROM, constant("0000000000.junit"))
+                        .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
+                        .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
+                        .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
+                        .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
+                        .to("shs:testAxel?to=0000000000.junit")
+                        .to(resultEndpoint);
 
                 /* mocking shs server */
                 from("jetty:http://localhost:" + port + "/shs/rs")

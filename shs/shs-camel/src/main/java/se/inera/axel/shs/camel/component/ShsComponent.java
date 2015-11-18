@@ -18,25 +18,29 @@
  */
 package se.inera.axel.shs.camel.component;
 
-import org.apache.camel.impl.DefaultComponent;
-import org.apache.camel.util.EndpointHelper;
-import se.inera.axel.shs.client.ShsClient;
+import org.apache.camel.CamelContext;
+import org.apache.camel.impl.UriEndpointComponent;
 
 import java.util.Map;
 
 /**
  * Represents the component that manages {@link ShsEndpoint}.
  */
-public class ShsComponent extends DefaultComponent {
+public class ShsComponent extends UriEndpointComponent {
+
+    public ShsComponent() {
+        super(ShsEndpoint.class);
+    }
+
+    public ShsComponent(CamelContext context) {
+        super(context, ShsEndpoint.class);
+    }
 
     @Override
     protected ShsEndpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        ShsClient shsClient = EndpointHelper.resolveReferenceParameter(
-                getCamelContext(), remaining, ShsClient.class, true);
 
-        setProperties(shsClient, parameters);
+        ShsEndpoint endpoint = new ShsEndpoint(uri, this, parameters);
 
-        ShsEndpoint endpoint = new ShsEndpoint(uri, this, shsClient, parameters);
 
         return endpoint;
     }

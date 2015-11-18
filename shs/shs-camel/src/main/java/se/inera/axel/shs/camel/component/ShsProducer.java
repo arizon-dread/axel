@@ -22,7 +22,6 @@ import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.exception.IllegalMessageStructureException;
 import se.inera.axel.shs.mime.ShsMessage;
@@ -47,7 +46,7 @@ public class ShsProducer extends DefaultProducer {
             throw new IllegalMessageStructureException("Camel exchange can not be evaluated as an ShsMessage");
         }
 
-        getEndpoint().getLabelValidator().validate(shsMessage.getLabel());
+        getEndpoint().getShsLabelValidator().validate(shsMessage.getLabel());
 
         switch (shsMessage.getLabel().getTransferType()) {
             case ASYNCH:
@@ -74,9 +73,7 @@ public class ShsProducer extends DefaultProducer {
         ShsClient shsClient = getShsClient();
 
         ShsMessage response = shsClient.request(shsMessage);
-        exchange.getIn().setBody(response);
-
-        new DefaultShsMessageToCamelProcessor().process(exchange);
+        getEndpoint().getShsMessageBinding().fromShsMessage(response, exchange);
     }
 
 

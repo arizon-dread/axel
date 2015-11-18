@@ -23,38 +23,65 @@ import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.ScheduledPollEndpoint;
 import org.apache.camel.spi.ExceptionHandler;
+import org.apache.camel.spi.UriEndpoint;
+import org.apache.camel.spi.UriParam;
 import org.apache.camel.util.ObjectHelper;
 import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.processor.LabelValidator;
 import se.inera.axel.shs.processor.SimpleLabelValidator;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Represents an SHS endpoint.
  */
+@UriEndpoint(scheme = "shs", syntax = "shs:command:producttype", title = "SHS", consumerClass = ShsPollingConsumer.class )
 public class ShsEndpoint extends ScheduledPollEndpoint {
 
-    String to;
-    String from;
+    @UriParam(enums = "send,request,fetch")
+    String command;
+
+    @UriParam
+    String producttype;
+
+    @UriParam(enums = "test,production", defaultValue = "production")
+    String status;
+
+    @UriParam
+    String originator;
+
+    @UriParam
+    String endrecipient;
+
+    @UriParam(label = "consumer")
+    Integer maxhits;
+
+    @Resource(type = ShsClient.class)
+    @UriParam
     ShsClient client;
-    ShsMessageBinding shsMessageBinding;
-    LabelValidator labelValidator;
+
+    @UriParam()
+    ShsMessageBinding shsMessageBinding = new DefaultShsMessageBinding();
+
+    @UriParam(label = "producer", description = "Shs address (org nr) of receiver")
+    String to;
+
+    @UriParam(label = "producer")
+    LabelValidator shsLabelValidator = new SimpleLabelValidator();
+
     Map<String, Object> parameters;
 
-    public ShsEndpoint(String uri, ShsComponent component, ShsClient client, Map<String, Object> parameters)
+    public ShsEndpoint(String uri, ShsComponent component, Map<String, Object> parameters)
             throws Exception
     {
         super(uri, component);
         this.client = client;
         this.parameters = parameters;
 
-        shsMessageBinding = new DefaultShsMessageBinding();
-        labelValidator = new SimpleLabelValidator();
         component.setProperties(this, parameters);
-
 
     }
 
@@ -79,7 +106,7 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
     public Consumer createConsumer(Processor processor) throws Exception {
 
         ObjectHelper.notNull(getClient(), "client");
-        ObjectHelper.notEmpty(getTo(), "'to'");
+        ObjectHelper.notEmpty(getCommand(), "command");
 
         /* first copy parameter map since we don't want to consume it for each consumer */
         Map<String, Object> parameters = new HashMap();
@@ -97,13 +124,12 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
 
 
         /* configure message list criterias */
-        MessageListConditions conditions =
-                getComponent().resolveAndRemoveReferenceParameter(parameters, "conditions", MessageListConditions.class);
-        if (conditions == null) {
-            conditions = new MessageListConditions();
-        } else {
-            conditions = conditions.copy();
-        }
+        MessageListConditions conditions = new MessageListConditions();
+        conditions.setEndrecipient(endrecipient);
+        conditions.setOriginator(originator);
+        conditions.setStatus(status);
+        conditions.setMaxhits(maxhits);
+        conditions.setProducttype(producttype);
 
         getComponent().setProperties(conditions, parameters);
 
@@ -120,6 +146,14 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         return true;
     }
 
+    public String getCommand() {
+        return command;
+    }
+
+    public void setCommand(String command) {
+        this.command = command;
+    }
+
     public String getTo() {
         return to;
     }
@@ -128,12 +162,36 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         this.to = to;
     }
 
-    public String getFrom() {
-        return from;
+    public String getProducttype() {
+        return producttype;
     }
 
-    public void setFrom(String from) {
-        this.from = from;
+    public void setProducttype(String producttype) {
+        this.producttype = producttype;
+    }
+
+    public String getOriginator() {
+        return originator;
+    }
+
+    public void setOriginator(String originator) {
+        this.originator = originator;
+    }
+
+    public String getEndrecipient() {
+        return endrecipient;
+    }
+
+    public void setEndrecipient(String endrecipient) {
+        this.endrecipient = endrecipient;
+    }
+
+    public Integer getMaxhits() {
+        return maxhits;
+    }
+
+    public void setMaxhits(Integer maxhits) {
+        this.maxhits = maxhits;
     }
 
     public ShsClient getClient() {
@@ -152,11 +210,11 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         this.shsMessageBinding = shsMessageBinding;
     }
 
-    public LabelValidator getLabelValidator() {
-        return labelValidator;
+    public LabelValidator getShsLabelValidator() {
+        return shsLabelValidator;
     }
 
-    public void setLabelValidator(LabelValidator labelValidator) {
-        this.labelValidator = labelValidator;
+    public void setShsLabelValidator(LabelValidator shsLabelValidator) {
+        this.shsLabelValidator = shsLabelValidator;
     }
 }
