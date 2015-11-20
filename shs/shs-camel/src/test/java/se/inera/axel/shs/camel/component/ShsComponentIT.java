@@ -56,6 +56,7 @@ public class ShsComponentIT extends CamelTestSupport {
         DefaultShsClient client = new DefaultShsClient();
         client.setRsUrl("http://localhost:" + port + "/shs/rs");
         client.setDsUrl("http://localhost:" + port + "/shs/ds");
+        client.setShsAddress("0000000000.junit");
 
         reg.bind("testAxel", client);
 
@@ -71,24 +72,20 @@ public class ShsComponentIT extends CamelTestSupport {
 			@Override
 			public void configure() throws Exception {
 				
-				from("direct:start")
-                .setHeader(ShsHeaders.FROM, constant("0000000000.junit"))
+				from("direct:async1")
 				.setHeader(ShsHeaders.TO, constant("0000000000.junit"))
-                .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
                 .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
                 .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
                 .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
-				.to("shs:testAxel")
+				.to("shs:send:00000000-0000-0000-0000-000000000000")
                 .to(resultEndpoint);
 
-                from("direct:start")
-                        .setHeader(ShsHeaders.FROM, constant("0000000000.junit"))
-                        .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
-                        .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
-                        .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
-                        .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
-                        .to("shs:testAxel?to=0000000000.junit")
-                        .to(resultEndpoint);
+                from("direct:sync1")
+                .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
+                .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
+                .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
+                .to("shs:request:00000000-0000-0000-0000-000000000000?to=0000000000.junit")
+                .to(resultEndpoint);
 
                 /* mocking shs server */
                 from("jetty:http://localhost:" + port + "/shs/rs")
@@ -113,8 +110,7 @@ public class ShsComponentIT extends CamelTestSupport {
         resultEndpoint.expectedMessageCount(1);
 
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ShsHeaders.TRANSFERTYPE, TransferType.ASYNCH);
-        template.sendBodyAndHeaders("direct:start", "BODY", headers);
+        template.sendBodyAndHeaders("direct:async1", "BODY", headers);
 
         resultEndpoint.assertIsSatisfied(1000);
         Exchange exchange = resultEndpoint.getReceivedExchanges().get(0);
@@ -130,8 +126,7 @@ public class ShsComponentIT extends CamelTestSupport {
         resultEndpoint.expectedMessageCount(1);
 
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ShsHeaders.TRANSFERTYPE, TransferType.SYNCH);
-        template.sendBodyAndHeaders("direct:start", "BODY", headers);
+        template.sendBodyAndHeaders("direct:sync1", "BODY", headers);
 
         resultEndpoint.assertIsSatisfied(1000);
         Exchange exchange = resultEndpoint.getReceivedExchanges().get(0);

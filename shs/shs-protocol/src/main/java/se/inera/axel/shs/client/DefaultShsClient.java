@@ -24,6 +24,7 @@ public class DefaultShsClient implements ShsClient {
 
     String rsUrl = null;
     String dsUrl = null;
+    String shsAddress = null;
 
     HttpClient httpClient;
 
@@ -122,7 +123,7 @@ public class DefaultShsClient implements ShsClient {
     }
 
     @Override
-    public ShsMessageList list(String shsAddress, MessageListConditions conditions) throws IOException {
+    public ShsMessageList list(MessageListConditions conditions) throws IOException {
         HttpClient httpClient = getHttpClient();
 
         if (shsAddress == null) {
@@ -210,7 +211,7 @@ public class DefaultShsClient implements ShsClient {
     }
 
     @Override
-    public ShsMessage fetch(String shsAddress, String txId) throws IOException {
+    public ShsMessage fetch(String txId) throws IOException {
 
         HttpClient httpClient = getHttpClient();
 
@@ -249,7 +250,7 @@ public class DefaultShsClient implements ShsClient {
     }
 
     @Override
-    public void ack(String shsAddress, String txId) throws IOException {
+    public void ack(String txId) throws IOException {
 
         HttpClient httpClient = getHttpClient();
 
@@ -305,6 +306,14 @@ public class DefaultShsClient implements ShsClient {
         this.dsUrl = dsUrl;
     }
 
+    @Override
+    public String getShsAddress() {
+        return shsAddress;
+    }
+
+    public void setShsAddress(String shsAddress) {
+        this.shsAddress = shsAddress;
+    }
 
     public HttpClient getHttpClient() {
         return httpClient;

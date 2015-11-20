@@ -10,9 +10,11 @@ public interface ShsClient {
 
     ShsMessage request(ShsMessage shsMessage) throws IOException;
 
-    ShsMessageList list(String shsAddress, MessageListConditions conditions) throws IOException;
+    ShsMessageList list(MessageListConditions conditions) throws IOException;
 
-    ShsMessage fetch(String shsAddress, String txId) throws IOException;
+    ShsMessage fetch(String txId) throws IOException;
 
-    void ack(String shsAddress, String txId) throws IOException;
+    void ack(String txId) throws IOException;
+
+    String getShsAddress();
 }

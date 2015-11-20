@@ -40,6 +40,25 @@ public class ShsProducer extends DefaultProducer {
     @Override
     public void process(final Exchange exchange) throws Exception {
 
+        if (getEndpoint().getTo() != null) {
+            exchange.getIn().setHeader(ShsHeaders.TO, getEndpoint().getTo());
+        }
+        if (getEndpoint().getOriginator() != null) {
+            exchange.getIn().setHeader(ShsHeaders.ORIGINATOR, getEndpoint().getOriginator());
+        }
+
+        if (getEndpoint().getEndrecipient() != null) {
+            exchange.getIn().setHeader(ShsHeaders.ENDRECIPIENT, getEndpoint().getEndrecipient());
+        }
+
+        if (getEndpoint().getProducttype() != null) {
+            exchange.getIn().setHeader(ShsHeaders.PRODUCT_ID, getEndpoint().getProducttype());
+        }
+
+        if (getEndpoint().getClient() != null) {
+            exchange.getIn().setHeader(ShsHeaders.FROM, getEndpoint().getClient().getShsAddress());
+        }
+
         ShsMessage shsMessage = getEndpoint().getShsMessageBinding().toShsMessage(exchange);
 
         if (shsMessage == null || shsMessage.getLabel() == null) {
@@ -48,15 +67,12 @@ public class ShsProducer extends DefaultProducer {
 
         getEndpoint().getShsLabelValidator().validate(shsMessage.getLabel());
 
-        switch (shsMessage.getLabel().getTransferType()) {
-            case ASYNCH:
-                doAsynchSend(exchange, shsMessage);
-                break;
-            case SYNCH:
-                doSynchSend(exchange, shsMessage);
-                break;
-            default:
-                throw new IllegalMessageStructureException("TransferType must be specified on message");
+        if ("async".equals(getEndpoint().getCommand())) {
+            doAsynchSend(exchange, shsMessage);
+        } else if ("sync".equals(getEndpoint().getCommand())) {
+            doSynchSend(exchange, shsMessage);
+        } else {
+            throw new IllegalMessageStructureException("TransferType must be specified on message");
         }
 
 	}

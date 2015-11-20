@@ -31,9 +31,9 @@ import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.processor.LabelValidator;
 import se.inera.axel.shs.processor.SimpleLabelValidator;
 
-import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents an SHS endpoint.
@@ -59,7 +59,6 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
     @UriParam(label = "consumer")
     Integer maxhits;
 
-    @Resource(type = ShsClient.class)
     @UriParam
     ShsClient client;
 
@@ -78,11 +77,19 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
             throws Exception
     {
         super(uri, component);
-        this.client = client;
+        this.client = component.resolveAndRemoveReferenceParameter(parameters, "client", ShsClient.class);
         this.parameters = parameters;
-
         component.setProperties(this, parameters);
-
+        if (this.client == null) {
+            Set<ShsClient> clients = getCamelContext().getRegistry().findByType(ShsClient.class);
+            if (clients == null) {
+                throw new RuntimeException("No instance of ShsClient found in registry nor specified in uri!");
+            } else if (clients.size() == 1) {
+                this.client = clients.iterator().next();
+            } else {
+                throw new RuntimeException("More than one instance of ShsClient found in registry, please specify which one to use!");
+            }
+        }
     }
 
     @Override

@@ -60,6 +60,7 @@ public class ShsClientTest {
         shsClient = new DefaultShsClient();
         shsClient.setRsUrl("http://localhost:" + server.getConnectors()[0].getLocalPort() + "/shs/rs");
         shsClient.setDsUrl("http://localhost:" + server.getConnectors()[0].getLocalPort() + "/shs/ds");
+        shsClient.setShsAddress("0000000000");
 
     }
 
@@ -214,7 +215,7 @@ public class ShsClientTest {
                 ShsMessageList list = new ShsMessageList();
                 list.getMessage().add(createMessage(label));
 
-                assertEquals(req.getPathInfo(), "/" + UrnAddress.valueOf("0000000000"));
+                assertEquals(req.getPathInfo(), "/" + UrnAddress.valueOf(shsClient.getShsAddress()));
 
                 resp.setContentType("application/xml");
                 resp.setStatus(HttpServletResponse.SC_OK);
@@ -226,7 +227,7 @@ public class ShsClientTest {
             };
         });
 
-        ShsMessageList response = shsClient.list("0000000000", null);
+        ShsMessageList response = shsClient.list(null);
 
         assertNotNull(response);
         assertFalse(response.getMessage().isEmpty());
@@ -236,14 +237,13 @@ public class ShsClientTest {
     @Test
     public void fetchExistingMessagesShouldReturnList() throws Exception {
         final String txId = "4c9fd3e8-b4c4-49aa-926a-52a68864a7b8";
-        final String address = "0000000000";
 
         addServlet("/shs/ds/*", new HttpServlet() {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
                 assertEquals(req.getPathInfo(),
-                        "/" + UrnAddress.valueOf(address) +  "/" + txId);
+                        "/" + UrnAddress.valueOf(shsClient.getShsAddress()) +  "/" + txId);
 
                 InputStream stream = shsTextMessageMime.openStream();
                 ShsMessage msg = messageMarshaller.unmarshal(stream);
@@ -261,7 +261,7 @@ public class ShsClientTest {
         });
 
 
-        ShsMessage response = shsClient.fetch(address, txId);
+        ShsMessage response = shsClient.fetch(txId);
 
         assertNotNull(response);
         assertEquals(response.getLabel().getTxId(), txId);
@@ -271,7 +271,6 @@ public class ShsClientTest {
     @Test
     public void ackExistingMessagesShouldWork() throws Exception {
         final String txId = "4c9fd3e8-b4c4-49aa-926a-52a68864a7b8";
-        final String address = "0000000000";
 
         addServlet("/shs/ds/*", new HttpServlet() {
             @Override
@@ -284,7 +283,7 @@ public class ShsClientTest {
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
                 assertEquals(req.getPathInfo(),
-                        "/" + UrnAddress.valueOf(address) +  "/" + txId);
+                        "/" + UrnAddress.valueOf(shsClient.getShsAddress()) +  "/" + txId);
 
                 assertEquals(req.getQueryString(), "action=ack");
 
@@ -296,7 +295,7 @@ public class ShsClientTest {
         });
 
 
-        shsClient.ack(address, txId);
+        shsClient.ack(txId);
 
     }
 
