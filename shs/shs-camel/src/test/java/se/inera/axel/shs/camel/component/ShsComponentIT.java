@@ -77,14 +77,14 @@ public class ShsComponentIT extends CamelTestSupport {
                 .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
                 .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
                 .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
-				.to("shs:send:00000000-0000-0000-0000-000000000000")
+				.to("shs:send?producttype=00000000-0000-0000-0000-000000000000")
                 .to(resultEndpoint);
 
                 from("direct:sync1")
                 .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
                 .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
                 .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
-                .to("shs:request:00000000-0000-0000-0000-000000000000?to=0000000000.junit")
+                .to("shs:request?producttype=00000000-0000-0000-0000-000000000000&to=0000000000.junit")
                 .to(resultEndpoint);
 
                 /* mocking shs server */

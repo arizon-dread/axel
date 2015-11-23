@@ -22,33 +22,32 @@ import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.ScheduledPollEndpoint;
-import org.apache.camel.spi.ExceptionHandler;
-import org.apache.camel.spi.UriEndpoint;
-import org.apache.camel.spi.UriParam;
+import org.apache.camel.spi.*;
 import org.apache.camel.util.ObjectHelper;
 import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.processor.LabelValidator;
 import se.inera.axel.shs.processor.SimpleLabelValidator;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Represents an SHS endpoint.
  */
-@UriEndpoint(scheme = "shs", syntax = "shs:command:producttype", title = "SHS", consumerClass = ShsPollingConsumer.class )
+@UriEndpoint(scheme = "shs", syntax = "shs:command", title = "SHS", consumerClass = ShsPollingConsumer.class )
 public class ShsEndpoint extends ScheduledPollEndpoint {
 
-    @UriParam(enums = "send,request,fetch")
+    @UriPath(enums = "send,request,fetch") @Metadata(required = "true")
     String command;
 
     @UriParam
     String producttype;
 
-    @UriParam(enums = "test,production", defaultValue = "production")
-    String status;
+    @UriParam(name = "status", enums = "test,production", defaultValue = "production")
+    String labelStatus;
 
     @UriParam
     String originator;
@@ -71,30 +70,19 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
     @UriParam(label = "producer")
     LabelValidator shsLabelValidator = new SimpleLabelValidator();
 
-    Map<String, Object> parameters;
+    @UriParam
+    ExceptionHandler exceptionHandler = null;
 
     public ShsEndpoint(String uri, ShsComponent component, Map<String, Object> parameters)
             throws Exception
     {
         super(uri, component);
-        this.client = component.resolveAndRemoveReferenceParameter(parameters, "client", ShsClient.class);
-        this.parameters = parameters;
-        component.setProperties(this, parameters);
-        if (this.client == null) {
-            Set<ShsClient> clients = getCamelContext().getRegistry().findByType(ShsClient.class);
-            if (clients == null) {
-                throw new RuntimeException("No instance of ShsClient found in registry nor specified in uri!");
-            } else if (clients.size() == 1) {
-                this.client = clients.iterator().next();
-            } else {
-                throw new RuntimeException("More than one instance of ShsClient found in registry, please specify which one to use!");
-            }
-        }
+
     }
 
     @Override
     public boolean isLenientProperties() {
-        return true;
+        return false;
     }
 
     @Override
@@ -106,6 +94,12 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
     public Producer createProducer() throws Exception {
 
         ObjectHelper.notNull(getClient(), "client");
+        ObjectHelper.notEmpty(getCommand(), "command");
+        ObjectHelper.notNull(getExceptionHandler(), "exceptionHandler");
+
+        String[] validCommands = { "send", "request" };
+        if (!ObjectHelper.contains(validCommands, getCommand()))
+            throw new IllegalArgumentException("Unknown command:" + getCommand());
 
         return new ShsProducer(this);
     }
@@ -115,35 +109,25 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         ObjectHelper.notNull(getClient(), "client");
         ObjectHelper.notEmpty(getCommand(), "command");
 
-        /* first copy parameter map since we don't want to consume it for each consumer */
-        Map<String, Object> parameters = new HashMap();
-        parameters.putAll(this.parameters);
+        ObjectHelper.notNull(getExceptionHandler(), "exceptionHandler");
 
-
-        /* configure exception handler */
-        ExceptionHandler exceptionHandler =
-                getComponent().getAndRemoveParameter(parameters, "exceptionHandler", ExceptionHandler.class);
-
-        if (exceptionHandler == null) {
-            exceptionHandler = new DefaultShsExceptionHandler(getClient());
-        }
-        getComponent().setProperties(exceptionHandler, parameters);
-
+        String[] validCommands = { "fetch" };
+        if (!ObjectHelper.contains(validCommands, getCommand()))
+            throw new IllegalArgumentException("Unknown command:" + getCommand());
 
         /* configure message list criterias */
         MessageListConditions conditions = new MessageListConditions();
-        conditions.setEndrecipient(endrecipient);
-        conditions.setOriginator(originator);
-        conditions.setStatus(status);
-        conditions.setMaxhits(maxhits);
-        conditions.setProducttype(producttype);
+        conditions.setEndrecipient(getEndrecipient());
+        conditions.setOriginator(getOriginator());
+        conditions.setStatus(getLabelStatus());
+        conditions.setMaxhits(getMaxhits());
+        conditions.setProducttype(getProducttype());
 
-        getComponent().setProperties(conditions, parameters);
-
+        getComponent().setProperties(conditions, getConsumerProperties());
 
         ShsPollingConsumer shsPollingConsumer = new ShsPollingConsumer(this, processor);
         configureConsumer(shsPollingConsumer);
-        shsPollingConsumer.setExceptionHandler(exceptionHandler);
+        shsPollingConsumer.setExceptionHandler(getExceptionHandler());
         shsPollingConsumer.setConditions(conditions);
 
         return shsPollingConsumer;
@@ -201,6 +185,14 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         this.maxhits = maxhits;
     }
 
+    public String getLabelStatus() {
+        return labelStatus;
+    }
+
+    public void setLabelStatus(String labelStatus) {
+        this.labelStatus = labelStatus;
+    }
+
     public ShsClient getClient() {
         return client;
     }
@@ -215,6 +207,14 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
 
     public void setShsMessageBinding(ShsMessageBinding shsMessageBinding) {
         this.shsMessageBinding = shsMessageBinding;
+    }
+
+    public ExceptionHandler getExceptionHandler() {
+        return exceptionHandler;
+    }
+
+    public void setExceptionHandler(ExceptionHandler exceptionHandler) {
+        this.exceptionHandler = exceptionHandler;
     }
 
     public LabelValidator getShsLabelValidator() {

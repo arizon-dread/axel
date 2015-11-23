@@ -6,6 +6,7 @@ import se.inera.axel.shs.exception.IllegalDatapartContentException;
 import se.inera.axel.shs.exception.IllegalMessageStructureException;
 import se.inera.axel.shs.mime.DataPart;
 import se.inera.axel.shs.mime.ShsMessage;
+import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.Content;
 import se.inera.axel.shs.xml.label.Data;
 
@@ -68,6 +69,7 @@ public class DefaultShsMessageBinding implements ShsMessageBinding {
 
         Message outLabel = labelBinding.fromLabel(shsMessage.getLabel());
         in.getHeaders().putAll(outLabel.getHeaders());
+        exchange.setProperty(ShsHeaders.LABEL, shsMessage.getLabel());
 
         if (shsMessage.getDataParts().size() == 1) {
             DataPart dataPart = shsMessage.getDataParts().get(0);

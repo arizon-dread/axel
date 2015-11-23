@@ -26,6 +26,7 @@ import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.exception.IllegalMessageStructureException;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
+import se.inera.axel.shs.xml.label.TransferType;
 
 /**
  * Camel SHS Message producer.
@@ -60,33 +61,30 @@ public class ShsProducer extends DefaultProducer {
         }
 
         ShsMessage shsMessage = getEndpoint().getShsMessageBinding().toShsMessage(exchange);
+        getEndpoint().getShsLabelValidator().validate(shsMessage);
 
-        if (shsMessage == null || shsMessage.getLabel() == null) {
-            throw new IllegalMessageStructureException("Camel exchange can not be evaluated as an ShsMessage");
-        }
-
-        getEndpoint().getShsLabelValidator().validate(shsMessage.getLabel());
-
-        if ("async".equals(getEndpoint().getCommand())) {
-            doAsynchSend(exchange, shsMessage);
-        } else if ("sync".equals(getEndpoint().getCommand())) {
-            doSynchSend(exchange, shsMessage);
+        if ("send".equals(getEndpoint().getCommand())) {
+            doAsyncSend(exchange, shsMessage);
+        } else if ("request".equals(getEndpoint().getCommand())) {
+            doSyncSend(exchange, shsMessage);
         } else {
-            throw new IllegalMessageStructureException("TransferType must be specified on message");
+            throw new IllegalMessageStructureException("Unknown command: " + getEndpoint().getCommand());
         }
 
 	}
 
-    private void doAsynchSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
+    private void doAsyncSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
         ShsClient shsClient = getShsClient();
+        shsMessage.getLabel().setTransferType(TransferType.ASYNCH);
 
         String txId = shsClient.send(shsMessage);
         exchange.getIn().setBody(txId);
         exchange.getIn().setHeader(ShsHeaders.X_SHS_TXID, txId);
     }
 
-    private void doSynchSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
+    private void doSyncSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
         ShsClient shsClient = getShsClient();
+        shsMessage.getLabel().setTransferType(TransferType.SYNCH);
 
         ShsMessage response = shsClient.request(shsMessage);
         getEndpoint().getShsMessageBinding().fromShsMessage(response, exchange);
