@@ -26,6 +26,7 @@ import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.exception.IllegalMessageStructureException;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
+import se.inera.axel.shs.xml.label.SequenceType;
 import se.inera.axel.shs.xml.label.TransferType;
 
 /**
@@ -85,6 +86,8 @@ public class ShsProducer extends DefaultProducer {
     private void doSyncSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
         ShsClient shsClient = getShsClient();
         shsMessage.getLabel().setTransferType(TransferType.SYNCH);
+        SequenceType sequenceType = exchange.getIn().getHeader(ShsHeaders.SEQUENCETYPE, SequenceType.REQUEST, SequenceType.class);
+        shsMessage.getLabel().setSequenceType(sequenceType);
 
         ShsMessage response = shsClient.request(shsMessage);
         getEndpoint().getShsMessageBinding().fromShsMessage(response, exchange);

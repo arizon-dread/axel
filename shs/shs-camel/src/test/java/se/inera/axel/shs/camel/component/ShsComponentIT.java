@@ -18,6 +18,7 @@
  */
 package se.inera.axel.shs.camel.component;
 
+import org.apache.camel.CamelExecutionException;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -29,6 +30,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.Test;
 import se.inera.axel.shs.camel.ShsMessageDataFormat;
 import se.inera.axel.shs.client.DefaultShsClient;
+import se.inera.axel.shs.exception.IllegalProductTypeException;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.label.SequenceType;
 import se.inera.axel.shs.xml.label.ShsLabel;
@@ -41,10 +43,8 @@ import java.util.UUID;
 @ContextConfiguration
 public class ShsComponentIT extends CamelTestSupport {
 	@EndpointInject(uri = "mock:result")
-	MockEndpoint resultEndpoint;
+	MockEndpoint mockEndpoint;
 
-    @EndpointInject(uri = "mock:shsSink")
-    MockEndpoint shsSink;
 
     int port = PortFinder.findFreePort();
 
@@ -73,28 +73,40 @@ public class ShsComponentIT extends CamelTestSupport {
 			public void configure() throws Exception {
 				
 				from("direct:async1")
-				.setHeader(ShsHeaders.TO, constant("0000000000.junit"))
-                .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
-                .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
-                .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
-				.to("shs:send?producttype=00000000-0000-0000-0000-000000000000")
-                .to(resultEndpoint);
+                    .setHeader(ShsHeaders.TO, constant("0000000000.junit"))
+                    .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
+                    .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
+                    .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
+                    .to("shs:send?producttype=00000000-0000-0000-0000-000000000000");
+
+                from("direct:async2")
+                    .setHeader(ShsHeaders.TO, constant("0000000000.junit"))
+                    .setHeader(ShsHeaders.PRODUCT_ID, constant("00000000-0000-0000-0000-000000000000"))
+                    .to("shs:send");
+
+                from("direct:async3")
+                    .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
+                    .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
+                    .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
+                    .to("shs:send?to=0000000000.junit");
 
                 from("direct:sync1")
-                .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
-                .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
-                .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
-                .to("shs:request?producttype=00000000-0000-0000-0000-000000000000&to=0000000000.junit")
-                .to(resultEndpoint);
+                    .setHeader(ShsHeaders.TO, constant("0000000000.junit"))
+                    .setHeader(ShsHeaders.DATAPART_CONTENTTYPE, constant("text/xml"))
+                    .setHeader(ShsHeaders.DATAPART_FILENAME, constant("MyXmlFile.xml"))
+                    .setHeader(ShsHeaders.DATAPART_TYPE, constant("xml"))
+                    .to("shs:request?producttype=00000000-0000-0000-0000-000000000000");
 
                 /* mocking shs server */
                 from("jetty:http://localhost:" + port + "/shs/rs")
                 .bean(DefaultShsMessageBinding.class)
                 .choice()
                 .when(header(ShsHeaders.TRANSFERTYPE).isEqualTo(TransferType.ASYNCH))
+                    .to(mockEndpoint)
                     .transform(header(ShsHeaders.TXID))
                 .otherwise()
                     .setHeader(ShsHeaders.SEQUENCETYPE, constant(SequenceType.REPLY))
+                    .to(mockEndpoint)
                     .transform(constant("SVAR"))
                     .bean(DefaultShsMessageBinding.class, "toShsMessage")
                 .end();
@@ -105,37 +117,72 @@ public class ShsComponentIT extends CamelTestSupport {
 
 	@DirtiesContext
 	@Test(enabled = true)
-	public void sendingAsynchMessageShouldReturnTxId() throws Exception {
-
-        resultEndpoint.expectedMessageCount(1);
+	public void sendingAsyncMessageShouldReturnTxId() throws Exception {
 
         Map<String, Object> headers = new HashMap<>();
-        template.sendBodyAndHeaders("direct:async1", "BODY", headers);
+        Object result = template.requestBodyAndHeaders("direct:async1", "BODY", headers);
 
-        resultEndpoint.assertIsSatisfied(1000);
-        Exchange exchange = resultEndpoint.getReceivedExchanges().get(0);
-        String txId = exchange.getIn().getMandatoryBody(String.class);
+        assertNotNull(result);
+        assertIsInstanceOf(String.class, result);
 
-        UUID.fromString(txId);
+        UUID.fromString((String)result);
     }
 
     @DirtiesContext
     @Test(enabled = true)
-    public void sendingSynchMessageShouldReturnResponseMessage() throws Exception {
+    public void sendingAsyncMessageShouldSendBody() throws Exception {
 
-        resultEndpoint.expectedMessageCount(1);
+        mockEndpoint.expectedMessageCount(1);
 
         Map<String, Object> headers = new HashMap<>();
-        template.sendBodyAndHeaders("direct:sync1", "BODY", headers);
+        headers.put(ShsHeaders.DATAPART_CONTENTTYPE, "text/xml");
+        headers.put(ShsHeaders.DATAPART_FILENAME, "MyXmlFile.xml");
+        headers.put(ShsHeaders.DATAPART_TYPE, "xml");
 
-        resultEndpoint.assertIsSatisfied(1000);
-        Exchange exchange = resultEndpoint.getReceivedExchanges().get(0);
-        String response = exchange.getIn().getMandatoryBody(String.class);
+        template.sendBodyAndHeaders("direct:async2", "<BODY/>", headers);
+
+        mockEndpoint.assertIsSatisfied(1000);
+        Exchange exchange = mockEndpoint.getReceivedExchanges().get(0);
+        String requestBody = exchange.getIn().getMandatoryBody(String.class);
+
+        assertNotNull(requestBody);
+        assertEquals(requestBody, "<BODY/>");
+
+        SequenceType sequenceType = exchange.getIn().getHeader(ShsHeaders.SEQUENCETYPE, SequenceType.class);
+        assertNotNull(sequenceType);
+        assertEquals(sequenceType, SequenceType.EVENT);
+
+
+    }
+    @DirtiesContext
+    @Test(enabled = true, expectedExceptions = IllegalProductTypeException.class)
+    public void sendingAsyncMessageWithoutProductIdShouldFail() throws Throwable {
+
+        try {
+            template.sendBody("direct:async3", "BODY");
+        } catch (CamelExecutionException e) {
+            throw e.getCause();
+        }
+    }
+
+    @DirtiesContext
+    @Test(enabled = true)
+    public void sendingSyncMessageShouldReturnResponseMessage() throws Exception {
+
+        mockEndpoint.expectedMessageCount(1);
+
+        Map<String, Object> headers = new HashMap<>();
+        Object response = template.requestBodyAndHeaders("direct:sync1", "BODY", headers, String.class);
         assertEquals(response, "SVAR");
+
+        mockEndpoint.assertIsSatisfied(1000);
+        Exchange exchange = mockEndpoint.getReceivedExchanges().get(0);
+        String requestBody = exchange.getIn().getMandatoryBody(String.class);
+        assertEquals(requestBody, "BODY");
 
         ShsLabel label = exchange.getProperty(ShsHeaders.LABEL, ShsLabel.class);
         assertNotNull(label);
-        assertEquals(label.getSequenceType(), SequenceType.REPLY);
+        assertEquals(label.getSequenceType(), SequenceType.REQUEST);
 
     }
 
