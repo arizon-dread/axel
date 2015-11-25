@@ -29,7 +29,7 @@ import org.apache.camel.testng.CamelTestSupport;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.Test;
-import se.inera.axel.shs.client.ShsClient;
+import se.inera.axel.shs.client.DefaultShsClient;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.processor.ShsMessageMarshaller;
 import se.inera.axel.shs.xml.label.SequenceType;
@@ -49,7 +49,7 @@ import static se.inera.axel.shs.xml.label.ShsLabelMaker.ShsLabelInstantiator.*;
 public class ShsPollingConsumerIT extends CamelTestSupport {
 
 	@EndpointInject(uri = "mock:result")
-	MockEndpoint resultEndpoint;
+	MockEndpoint mockEndpoint;
 
     int port = PortFinder.findFreePort();
 
@@ -58,9 +58,10 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
         JndiRegistry reg = super.createRegistry();
 
 
-        ShsClient client = new ShsClient();
+        DefaultShsClient client = new DefaultShsClient();
         client.setRsUrl("http://localhost:" + port + "/shs/rs");
         client.setDsUrl("http://localhost:" + port + "/shs/ds");
+        client.setShsAddress("0000000000.junit");
 
         reg.bind("client", client);
 
@@ -74,7 +75,7 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
 			@Override
 			public void configure() throws Exception {
 
-				from("shs:client?to=0000000000.junit&producttype=00000000-0000-0000-0000-000000000000")
+				from("shs:fetch?producttype=00000000-0000-0000-0000-000000000000")
                 .setHeader(Exchange.FILE_NAME, header(ShsHeaders.TXID))
                 .to("mock:result");
 
@@ -90,8 +91,17 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
                         with(sequenceType, SequenceType.EVENT),
                         with(transferType, TransferType.ASYNCH)))));
 
+                se.inera.axel.shs.mime.ShsMessage shs2 = make(an(ShsMessage,
+                        with(ShsMessage.label, an(ShsLabel,
+                                with(txId, "0ee7ed49-8206-498c-9b35-00f7629dd0c0"),
+                                with(status, Status.TEST),
+                                with(to, a(To, with(To.value, "0000000000.jmeter"))),
+                                with(product, a(Product, with(Product.value, "00000000-0000-0000-0000-000000000000"))),
+                                with(sequenceType, SequenceType.EVENT),
+                                with(transferType, TransferType.ASYNCH)))));
 
                 messages.put(shs1.getLabel().getTxId(), shs1);
+                messages.put(shs2.getLabel().getTxId(), shs2);
 
                 /* mocking shs server */
                 from("jetty:http://localhost:" + port + "/shs/ds/urn:X-shs:0000000000.junit")
@@ -101,7 +111,6 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
                             ShsMessageList list = new ShsMessageList();
                             for (se.inera.axel.shs.mime.ShsMessage shs : messages.values()) {
                                 if (shs.getLabel().getProduct().getValue().equals(exchange.getIn().getHeader("producttype"))) {
-                                    ShsMessageMarshaller msh = new ShsMessageMarshaller();
                                     Message m = new Message();
                                     m.setFrom(shs.getLabel().getFrom().getValue());
                                     m.setTo(shs.getLabel().getTo().getValue());
@@ -149,15 +158,15 @@ public class ShsPollingConsumerIT extends CamelTestSupport {
 	@DirtiesContext
 	@Test(enabled = true)
 	public void testShouldThrowException() throws Exception {
-        resultEndpoint.expectedMessageCount(1);
-        resultEndpoint.expectedBodiesReceived("Message body");
-        resultEndpoint.expectedHeaderReceived(ShsHeaders.SEQUENCETYPE, SequenceType.EVENT);
-        resultEndpoint.expectedHeaderReceived(ShsHeaders.PRODUCT_ID, "00000000-0000-0000-0000-000000000000");
-        resultEndpoint.expectedHeaderReceived(ShsHeaders.STATUS, Status.TEST);
-        resultEndpoint.expectedHeaderReceived(ShsHeaders.TXID, "88B06FFC-860D-430F-B812-A0DA2EB40E9F");
-        resultEndpoint.expectedHeaderReceived(ShsHeaders.DATAPART_FILENAME, "testfile.txt");
-        resultEndpoint.expectedHeaderReceived(Exchange.FILE_NAME, "88B06FFC-860D-430F-B812-A0DA2EB40E9F");
-        resultEndpoint.assertIsSatisfied(4000);
+        mockEndpoint.expectedMessageCount(2);
+        mockEndpoint.expectedBodiesReceived("Message body");
+        mockEndpoint.expectedHeaderReceived(ShsHeaders.SEQUENCETYPE, SequenceType.EVENT);
+        mockEndpoint.expectedHeaderReceived(ShsHeaders.PRODUCT_ID, "00000000-0000-0000-0000-000000000000");
+        mockEndpoint.expectedHeaderReceived(ShsHeaders.STATUS, Status.TEST);
+        mockEndpoint.expectedHeaderReceived(ShsHeaders.TXID, "88B06FFC-860D-430F-B812-A0DA2EB40E9F");
+        mockEndpoint.expectedHeaderReceived(ShsHeaders.DATAPART_FILENAME, "testfile.txt");
+        mockEndpoint.expectedHeaderReceived(Exchange.FILE_NAME, "88B06FFC-860D-430F-B812-A0DA2EB40E9F");
+        mockEndpoint.assertIsSatisfied(4000);
     }
 
 

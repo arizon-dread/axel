@@ -23,6 +23,7 @@ import org.apache.camel.spi.ExceptionHandler;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import se.inera.axel.shs.client.DefaultShsClient;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.exception.MissingDeliveryExecutionException;
 import se.inera.axel.shs.exception.OtherErrorException;
@@ -36,7 +37,7 @@ import java.io.IOException;
 
 /**
  * This exception handler converts an exception (on an exchange) to an {@link ShsException} and sends it
- * back to the sender of the original message using the provided {@link ShsClient}.
+ * back to the sender of the original message using the provided {@link DefaultShsClient}.
  *
  * @author Björn Bength
  */

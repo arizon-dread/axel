@@ -22,11 +22,12 @@ import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
 import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.exception.IllegalMessageStructureException;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ShsHeaders;
+import se.inera.axel.shs.xml.label.SequenceType;
+import se.inera.axel.shs.xml.label.TransferType;
 
 /**
  * Camel SHS Message producer.
@@ -41,40 +42,55 @@ public class ShsProducer extends DefaultProducer {
     @Override
     public void process(final Exchange exchange) throws Exception {
 
-        ShsMessage shsMessage = getEndpoint().getShsMessageBinding().toShsMessage(exchange);
-
-        if (shsMessage == null || shsMessage.getLabel() == null) {
-            throw new IllegalMessageStructureException("Camel exchange can not be evaluated as an ShsMessage");
+        if (getEndpoint().getTo() != null) {
+            exchange.getIn().setHeader(ShsHeaders.TO, getEndpoint().getTo());
+        }
+        if (getEndpoint().getOriginator() != null) {
+            exchange.getIn().setHeader(ShsHeaders.ORIGINATOR, getEndpoint().getOriginator());
         }
 
-        switch (shsMessage.getLabel().getTransferType()) {
-            case ASYNCH:
-                doAsynchSend(exchange, shsMessage);
-                break;
-            case SYNCH:
-                doSynchSend(exchange, shsMessage);
-                break;
-            default:
-                throw new IllegalMessageStructureException("TransferType must be specified on message");
+        if (getEndpoint().getEndrecipient() != null) {
+            exchange.getIn().setHeader(ShsHeaders.ENDRECIPIENT, getEndpoint().getEndrecipient());
+        }
+
+        if (getEndpoint().getProducttype() != null) {
+            exchange.getIn().setHeader(ShsHeaders.PRODUCT_ID, getEndpoint().getProducttype());
+        }
+
+        if (getEndpoint().getClient() != null) {
+            exchange.getIn().setHeader(ShsHeaders.FROM, getEndpoint().getClient().getShsAddress());
+        }
+
+        ShsMessage shsMessage = getEndpoint().getShsMessageBinding().toShsMessage(exchange);
+        getEndpoint().getShsLabelValidator().validate(shsMessage);
+
+        if ("send".equals(getEndpoint().getCommand())) {
+            doAsyncSend(exchange, shsMessage);
+        } else if ("request".equals(getEndpoint().getCommand())) {
+            doSyncSend(exchange, shsMessage);
+        } else {
+            throw new IllegalMessageStructureException("Unknown command: " + getEndpoint().getCommand());
         }
 
 	}
 
-    private void doAsynchSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
+    private void doAsyncSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
         ShsClient shsClient = getShsClient();
+        shsMessage.getLabel().setTransferType(TransferType.ASYNCH);
 
         String txId = shsClient.send(shsMessage);
         exchange.getIn().setBody(txId);
         exchange.getIn().setHeader(ShsHeaders.X_SHS_TXID, txId);
     }
 
-    private void doSynchSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
+    private void doSyncSend(final Exchange exchange, ShsMessage shsMessage) throws Exception {
         ShsClient shsClient = getShsClient();
+        shsMessage.getLabel().setTransferType(TransferType.SYNCH);
+        SequenceType sequenceType = exchange.getIn().getHeader(ShsHeaders.SEQUENCETYPE, SequenceType.REQUEST, SequenceType.class);
+        shsMessage.getLabel().setSequenceType(sequenceType);
 
         ShsMessage response = shsClient.request(shsMessage);
-        exchange.getIn().setBody(response);
-
-        new DefaultShsMessageToCamelProcessor().process(exchange);
+        getEndpoint().getShsMessageBinding().fromShsMessage(response, exchange);
     }
 
 

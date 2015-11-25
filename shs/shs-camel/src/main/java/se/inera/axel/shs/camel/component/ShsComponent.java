@@ -18,26 +18,53 @@
  */
 package se.inera.axel.shs.camel.component;
 
-import org.apache.camel.impl.DefaultComponent;
-import org.apache.camel.util.EndpointHelper;
-import se.inera.axel.shs.client.MessageListConditions;
+import org.apache.camel.CamelContext;
+import org.apache.camel.impl.UriEndpointComponent;
+import org.apache.camel.spi.ExceptionHandler;
 import se.inera.axel.shs.client.ShsClient;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents the component that manages {@link ShsEndpoint}.
  */
-public class ShsComponent extends DefaultComponent {
+public class ShsComponent extends UriEndpointComponent {
+
+    public ShsComponent() {
+        super(ShsEndpoint.class);
+    }
+
+    public ShsComponent(CamelContext context) {
+        super(context, ShsEndpoint.class);
+    }
 
     @Override
     protected ShsEndpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        ShsClient shsClient = EndpointHelper.resolveReferenceParameter(
-                getCamelContext(), remaining, ShsClient.class, true);
 
-        setProperties(shsClient, parameters);
+        ShsEndpoint endpoint = new ShsEndpoint(uri, this, parameters);
+        endpoint.setCommand(remaining);
+        setProperties(endpoint, parameters);
 
-        ShsEndpoint endpoint = new ShsEndpoint(uri, this, shsClient, parameters);
+
+        if (endpoint.getClient() == null) {
+            Set<ShsClient> clients = getCamelContext().getRegistry().findByType(ShsClient.class);
+            if (clients == null) {
+                throw new RuntimeException("No instance of ShsClient found in registry nor specified in uri!");
+            } else if (clients.size() == 1) {
+                endpoint.setClient(clients.iterator().next());
+            } else {
+                throw new RuntimeException("More than one instance of ShsClient found in registry, please specify which one to use!");
+            }
+        }
+
+
+        if (endpoint.getExceptionHandler() == null) {
+            endpoint.setExceptionHandler(new DefaultShsExceptionHandler(endpoint.getClient()));
+
+        }
+        setProperties(endpoint.getExceptionHandler(), parameters);
+
 
         return endpoint;
     }
