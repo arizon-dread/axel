@@ -22,6 +22,7 @@ import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.ScheduledPollEndpoint;
+import org.apache.camel.processor.idempotent.MemoryIdempotentRepository;
 import org.apache.camel.spi.*;
 import org.apache.camel.util.ObjectHelper;
 import se.inera.axel.shs.client.MessageListConditions;
@@ -29,10 +30,8 @@ import se.inera.axel.shs.client.ShsClient;
 import se.inera.axel.shs.processor.LabelValidator;
 import se.inera.axel.shs.processor.SimpleLabelValidator;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Represents an SHS endpoint.
@@ -72,6 +71,12 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
 
     @UriParam
     ExceptionHandler exceptionHandler = null;
+
+    @UriParam(label = "consumer")
+    IdempotentRepository<String> inProgressRepository = new MemoryIdempotentRepository();
+
+    @UriParam(label = "consumer")
+    ExecutorService fetchExecutorService;
 
     public ShsEndpoint(String uri, ShsComponent component, Map<String, Object> parameters)
             throws Exception
@@ -115,6 +120,9 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         if (!ObjectHelper.contains(validCommands, getCommand()))
             throw new IllegalArgumentException("Unknown command:" + getCommand());
 
+        if (fetchExecutorService == null) {
+            fetchExecutorService = getCamelContext().getExecutorServiceManager().newDefaultThreadPool(this, "shs-fetch");
+        }
         /* configure message list criterias */
         MessageListConditions conditions = new MessageListConditions();
         conditions.setEndrecipient(getEndrecipient());
@@ -125,7 +133,7 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
 
         getComponent().setProperties(conditions, getConsumerProperties());
 
-        ShsPollingConsumer shsPollingConsumer = new ShsPollingConsumer(this, processor);
+        ShsPollingConsumer shsPollingConsumer = new ShsPollingConsumer(this, processor, fetchExecutorService);
         configureConsumer(shsPollingConsumer);
         shsPollingConsumer.setExceptionHandler(getExceptionHandler());
         shsPollingConsumer.setConditions(conditions);
@@ -223,5 +231,13 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
 
     public void setShsLabelValidator(LabelValidator shsLabelValidator) {
         this.shsLabelValidator = shsLabelValidator;
+    }
+
+    public IdempotentRepository<String> getInProgressRepository() {
+        return inProgressRepository;
+    }
+
+    public void setInProgressRepository(IdempotentRepository<String> inProgressRepository) {
+        this.inProgressRepository = inProgressRepository;
     }
 }

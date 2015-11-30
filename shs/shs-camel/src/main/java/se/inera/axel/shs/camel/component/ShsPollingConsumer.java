@@ -32,6 +32,8 @@ import se.inera.axel.shs.xml.message.ShsMessageList;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * A polling Camel SHS Message consumer that polls an SHS server for new (asynchronous) messages.
@@ -62,9 +64,10 @@ import java.util.Queue;
 public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
     MessageListConditions conditions;
 
-
-    public ShsPollingConsumer(ShsEndpoint endpoint, Processor processor) {
+    ExecutorService executorService;
+    public ShsPollingConsumer(ShsEndpoint endpoint, Processor processor, ExecutorService executorService) {
         super(endpoint, processor);
+        this.executorService = executorService;
     }
 
     @Override
@@ -83,7 +86,7 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             // only loop if we are started (allowed to run)
             // use poll to remove the head so it does not consume memory even after we have processed it
 
-            Exchange exchange = (Exchange)exchanges.poll();
+            final Exchange exchange = (Exchange)exchanges.poll();
 
             // add current index and total as properties
             exchange.setProperty(Exchange.BATCH_INDEX, index);
@@ -94,10 +97,15 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             pendingExchanges = total - index - 1;
 
             // process the current exchange
-            boolean started = processExchange(exchange);
 
-            // if we did not start process the file then decrement the counter
-            if (!started) {
+            try {
+                executorService.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        processExchange(exchange);
+                    }
+                });
+            } catch (RejectedExecutionException e) {
                 answer--;
             }
         }
@@ -105,40 +113,42 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
         return answer;
     }
 
-    protected boolean processExchange(final Exchange exchange) throws Exception {
-
-
-        // TODO add task executor
+    protected void processExchange(final Exchange exchange) {
 
         /* which shs message we deal with is specified in an exchange property */
         final Message message = exchange.getProperty(Message.class.getCanonicalName(), Message.class);
         if (message == null) {
             log.warn("no shs message registered on exchange property '{}' for fetching and processing",
                     Message.class.getCanonicalName());
-            return false;
+            throw new IllegalArgumentException("no Message on exchange from server poll");
         }
 
-        /* fetch the message from the server given the txId */
-
-        log.trace("scheduling shs message {} for fetching and processing", message.getTxId());
-
-        ShsMessage shsMessage;
         try {
-            shsMessage = getShsClient().fetch(message.getTxId());
-        } catch (Exception e) {
-            log.error("error fetching message from shs server", e);
-            return false;
-        }
+
+            /* fetch the message from the server given the txId */
+
+            log.trace("scheduling shs message {} for fetching and processing", message.getTxId());
+
+            ShsMessage shsMessage;
+            try {
+                shsMessage = getShsClient().fetch(message.getTxId());
+            } catch (Exception e) {
+                log.error("error fetching message from shs server", e);
+                throw e;
+            }
 
 
-        /* convert the shs message to a camel normalized message using some 'binding' converter */
-        try {
-            // binding to convert from shs message to camel exchange.
-            getEndpoint().getShsMessageBinding().fromShsMessage(shsMessage, exchange);
-            exchange.setProperty(ShsHeaders.LABEL, shsMessage.getLabel());
+            /* convert the shs message to a camel normalized message using some 'binding' converter */
+            try {
+                // binding to convert from shs message to camel exchange.
+                getEndpoint().getShsMessageBinding().fromShsMessage(shsMessage, exchange);
+                exchange.setProperty(ShsHeaders.LABEL, shsMessage.getLabel());
+            } catch (Exception e) {
+                log.error("error converting shs message '" + message.getTxId() + "' to camel message", e);
+                throw e;
+            }
         } catch (Exception e) {
-            log.error("error converting shs message '" + message.getTxId() + "' to camel message", e);
-            return false;
+            getEndpoint().getInProgressRepository().remove(message.getTxId());
         }
 
 
@@ -149,10 +159,13 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
 
                 if (exchange.getException() != null) {
                     getExceptionHandler().handleException("Error processing exchange", exchange, exchange.getException());
+                    getEndpoint().getInProgressRepository().remove(message.getTxId());
                 } else {
                     try {
                         getShsClient().ack(message.getTxId());
+                        getEndpoint().getInProgressRepository().confirm(message.getTxId());
                     } catch (Exception e) {
+                        getEndpoint().getInProgressRepository().remove(message.getTxId());
                         log.error("error acking shs message " + message.getTxId() + " with server,"
                                 + " although message is fetched and processed without errors", e);
                     }
@@ -160,9 +173,9 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             }
         });
 
-        /* return true if done sync or false if async, right now something in between. */
-        return false;
+
     }
+
 
     @Override
     protected int poll() throws Exception {
@@ -178,9 +191,11 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
         }
 
         for (Message message : queryResult.getMessage()) {
-            Exchange exchange = getEndpoint().createExchange();
-            exchange.setProperty(Message.class.getCanonicalName(), message);
-            exchanges.add(exchange);
+            if (getEndpoint().getInProgressRepository().add(message.getTxId())) {
+                Exchange exchange = getEndpoint().createExchange();
+                exchange.setProperty(Message.class.getCanonicalName(), message);
+                exchanges.add(exchange);
+            }
         }
 
         int total = exchanges.size();
