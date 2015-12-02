@@ -6,6 +6,8 @@ import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.protocol.Protocol;
+import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.apache.commons.httpclient.util.HttpURLConnection;
 import se.inera.axel.shs.exception.MissingDeliveryExecutionException;
 import se.inera.axel.shs.mime.ShsMessage;
@@ -17,6 +19,8 @@ import se.inera.axel.shs.xml.message.ShsMessageList;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,12 +31,13 @@ public class DefaultShsClient implements ShsClient {
     String shsAddress = null;
 
     HttpClient httpClient;
+    String keyStore;
+    String trustStore;
+    String keyStorePassword;
+    String trustStorePassword;
 
     public DefaultShsClient() {
-        this.httpClient = new HttpClient();
-        MultiThreadedHttpConnectionManager connectionManager =
-                new MultiThreadedHttpConnectionManager();
-        httpClient.setHttpConnectionManager(connectionManager);
+
     }
 
 
@@ -315,12 +320,74 @@ public class DefaultShsClient implements ShsClient {
         this.shsAddress = shsAddress;
     }
 
-    public HttpClient getHttpClient() {
+    public String getKeyStore() {
+        return keyStore;
+    }
+
+    public void setKeyStore(String keyStore) {
+        this.keyStore = keyStore;
+    }
+
+    public String getTrustStore() {
+        return trustStore;
+    }
+
+    public void setTrustStore(String trustStore) {
+        this.trustStore = trustStore;
+    }
+
+    public String getKeyStorePassword() {
+        return keyStorePassword;
+    }
+
+    public void setKeyStorePassword(String keyStorePassword) {
+        this.keyStorePassword = keyStorePassword;
+    }
+
+    public String getTrustStorePassword() {
+        return trustStorePassword;
+    }
+
+    public void setTrustStorePassword(String trustStorePassword) {
+        this.trustStorePassword = trustStorePassword;
+    }
+
+    protected HttpClient getHttpClient() {
+        if (this.httpClient == null) {
+            ProtocolSocketFactory sslProtocolFactory = getSSLProtocolFactory();
+            if (sslProtocolFactory != null) {
+                Protocol https = new Protocol("https", sslProtocolFactory, 443);
+                Protocol.registerProtocol("https", https);
+            }
+
+            this.httpClient = new HttpClient();
+            MultiThreadedHttpConnectionManager connectionManager =
+                    new MultiThreadedHttpConnectionManager();
+            httpClient.setHttpConnectionManager(connectionManager);
+        }
         return httpClient;
     }
 
-    public void setHttpClient(HttpClient httpClient) {
-        this.httpClient = httpClient;
+    protected ProtocolSocketFactory getSSLProtocolFactory() {
+        if (getKeyStore() == null && getTrustStore() == null)
+            return null;
+
+        try {
+            URL keystoreUrl = null;
+            if (getKeyStore() != null) {
+                keystoreUrl = new URL(getKeyStore());
+            }
+            URL truststoreUrl = null;
+            if (getTrustStore() != null) {
+                truststoreUrl = new URL(getTrustStore());
+            }
+
+            return new AuthSSLProtocolSocketFactory(
+                    keystoreUrl, getKeyStorePassword(),
+                    truststoreUrl, getTrustStorePassword());
+        } catch (MalformedURLException e) {
+            throw new AuthSSLInitializationError("Malformed URL", e);
+        }
     }
 
 }
