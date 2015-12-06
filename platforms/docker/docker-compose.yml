@@ -1,0 +1,13 @@
+shs:
+    build: shs-broker
+    links:
+        - mongodb:db
+    ports:
+        - "8080:8080"
+
+
+mongodb:
+    build: mongodb
+    ports:
+        - "27017:27017"
+
