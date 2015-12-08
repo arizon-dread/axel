@@ -5,7 +5,7 @@ ADD axel-home /home/axel/
 
 ENV CATALINA_OPTS "-Daxel.home=file:/home/axel"
 
-VOLUME /home/axel
+#VOLUME /home/axel
 
 EXPOSE 8080
 
