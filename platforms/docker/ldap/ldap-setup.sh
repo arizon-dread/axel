@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PW=admin
+PW=ldap
 
 #sed -i "s/olcSaslSecProps.*/olcSaslSecProps: none/" /etc/openldap/slapd.d/cn=config.ldif
 
@@ -10,7 +10,7 @@ echo "olcRootPW: `slappasswd -n -s $PW`" >> /etc/openldap/slapd.d/cn=config/olcD
 #sed "s/olcRootPW:.*/olcRootPW: $PW" /etc/openldap/slapd.d/cn=config.ldif
 
 SUFFIX="L=SHS"
-sed -i "s/olcRootDN:.*/olcRootDN: cn=Manager, $SUFFIX/" /etc/openldap/slapd.d/cn=config/olcDatabase={2}bdb.ldif
+sed -i "s/olcRootDN:.*/olcRootDN: cn=admin, $SUFFIX/" /etc/openldap/slapd.d/cn=config/olcDatabase={2}bdb.ldif
 sed -i "s/olcSuffix:.*/olcSuffix: $SUFFIX/" /etc/openldap/slapd.d/cn=config/olcDatabase={2}bdb.ldif
 
 slapadd -b "cn=config" -l /tmp/shs-schema.ldif
