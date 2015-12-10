@@ -10,4 +10,4 @@ RUN bash /tmp/ldap-setup.sh
 
 VOLUME /var/lib/ldap
 
-CMD /usr/sbin/slapd -d 0
+CMD /usr/sbin/slapd -d 72
