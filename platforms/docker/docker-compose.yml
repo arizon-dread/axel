@@ -9,11 +9,7 @@ shs:
 
 mongodb:
     build: mongodb
-    ports:
-        - "27017:27017"
 
 openldap:
     build: ldap
-    ports:
-        - "389:389"
 
