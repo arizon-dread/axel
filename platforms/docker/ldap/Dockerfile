@@ -1,6 +1,6 @@
-FROM centos:6
+FROM axelbase:latest
 
-RUN yum update -y && yum install -y openldap-servers openldap-clients && yum clean all -y
+RUN yum install -y openldap-servers openldap-clients && yum clean all -y
 
 EXPOSE 389
 
