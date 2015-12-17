@@ -1,7 +1,11 @@
-FROM mongo:2.6
+FROM axelbase:latest
+
+COPY mongodb.repo /etc/yum.repos.d/
+RUN yum install -y mongodb-org && yum clean all -y
 
 EXPOSE 27017
 
 VOLUME /data/db
 
-ENTRYPOINT mongod --smallfiles
+ENTRYPOINT mongod --dbpath /data/db
+
