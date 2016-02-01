@@ -24,6 +24,7 @@ Dessa programvaror behöver finnas förinstallerade för att man ska kunna bygga
 * MongoDB 2.4  
 * LDAP Server med SHS-katalogen, central eller lokal. Se nedan för instruktioner.
 
+MongoDB och OpenLDAP finns även konfigurerade och klara för användning i Docker-konfigurationen i `axel/platforms/docker` om man föredrar att använda Docker. 
 
 Bygga
 ---------------
@@ -43,8 +44,11 @@ En WAR-fil med enbart SHS-servern finns paketerad i
 
 Installera
 ---------------
-Det enklaste sättet att installera en Axel-server är att få tag i, och packa upp distributionsfilen
-`axel-2.0.0.tar.gz` på lämpligt ställe:
+Det enklaste sättet att installera en Axel-server är att bygga de docker-images som specas i
+ `axel/platforms/docker/docker-compose.yml`. Konfigurationen i dessa görs enklast med miljövariabler. 
+ Vill man ändra defaultkonfigurationen kan man lägga in egna konfigurationsfiler och bygga en ny image.
+
+Ett annat alternativ är att packa upp distributionsfilen `axel-2.0.0.tar.gz` på lämpligt ställe:
 
     $ tar xvfz axel-2.0.0.tar.gz -C /opt
 
@@ -53,6 +57,7 @@ När detta är gjort kan du läsa om konfiguration m.m. i filen `/opt/axel-2.0.0
 
 *Observera att denna förpaketerade version enbart är testad under Linux.*
 
+Slutligen kan man välja någon av de WAR-filer som byggs och deploya dessa i t.ex. Apache Tomcat.
 
 
 Konfigurera OpenLDAP för SHS
