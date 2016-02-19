@@ -31,6 +31,7 @@ import se.inera.axel.shs.exception.ShsException;
 import se.inera.axel.shs.mime.ShsMessage;
 import se.inera.axel.shs.processor.ResponseMessageBuilder;
 import se.inera.axel.shs.processor.ShsHeaders;
+import se.inera.axel.shs.xml.label.SequenceType;
 import se.inera.axel.shs.xml.label.ShsLabel;
 
 import java.io.IOException;
@@ -72,14 +73,18 @@ public class DefaultShsExceptionHandler implements ExceptionHandler {
             return;
         }
 
-        log.debug("Creating an shs error message from original message with corrId=" + label.getCorrId() +
-                " to send back to the original sender (" + label.getFrom().getValue() + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("Creating an shs error message from original message with corrId=" + label.getCorrId() +
+                    " to send back to the original sender (" + label.getFrom().getValue() + ")");
+        }
 
         ShsException shsException = createOrEnrichShsException(exchange, label);
 
         ShsMessage errorMessage = responseMessageBuilder.buildErrorMessage(label, shsException);
         try {
-            client.send(errorMessage);
+            if (label.getSequenceType() != SequenceType.ADM) {
+                client.send(errorMessage);
+            }
         } catch (Exception e) {
             ShsLabel errorLabel = errorMessage.getLabel();
 
