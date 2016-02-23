@@ -123,6 +123,13 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             throw new IllegalArgumentException("no Message on exchange from server poll");
         }
 
+        if (getEndpoint().getIdempotentRepository().contains(message.getTxId())) {
+            if (log.isInfoEnabled()) {
+                log.info("Message " + message.getTxId() + " already fetched from shs server");
+            }
+            return;
+        }
+
         try {
 
             /* fetch the message from the server given the txId */
@@ -163,6 +170,7 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
                 } else {
                     try {
                         getShsClient().ack(message.getTxId());
+                        getEndpoint().getIdempotentRepository().add(message.getTxId());
                         getEndpoint().getInProgressRepository().confirm(message.getTxId());
                     } catch (Exception e) {
                         getEndpoint().getInProgressRepository().remove(message.getTxId());
@@ -175,7 +183,6 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
 
 
     }
-
 
     @Override
     protected int poll() throws Exception {
