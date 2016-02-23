@@ -33,7 +33,6 @@ import se.inera.axel.shs.xml.message.ShsMessageList;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 
 /**
  * A polling Camel SHS Message consumer that polls an SHS server for new (asynchronous) messages.
@@ -97,23 +96,35 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             pendingExchanges = total - index - 1;
 
             // process the current exchange
-
+            boolean started;
             try {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        processExchange(exchange);
-                    }
-                });
-            } catch (RejectedExecutionException e) {
+                started = processExchange(exchange);
+            } catch (Exception e) {
+                log.error("Error starting shs fetching process", e);
+                started = false;
+            }
+
+            // if we did not start process the file then decrement the counter
+            if (!started) {
                 answer--;
             }
+
+//            try {
+//                executorService.execute(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        processExchange(exchange);
+//                    }
+//                });
+//            } catch (RejectedExecutionException e) {
+//                answer--;
+//            }
         }
 
         return answer;
     }
 
-    protected void processExchange(final Exchange exchange) {
+    protected boolean processExchange(final Exchange exchange) {
 
         /* which shs message we deal with is specified in an exchange property */
         final Message message = exchange.getProperty(Message.class.getCanonicalName(), Message.class);
@@ -123,14 +134,15 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             throw new IllegalArgumentException("no Message on exchange from server poll");
         }
 
-        if (getEndpoint().getIdempotentRepository().contains(message.getTxId())) {
-            if (log.isInfoEnabled()) {
-                log.info("Message " + message.getTxId() + " already fetched from shs server");
-            }
-            return;
-        }
-
         try {
+
+            if (getEndpoint().getIdempotentRepository().contains(message.getTxId())) {
+                if (log.isInfoEnabled()) {
+                    log.info("Message " + message.getTxId() + " already fetched from shs server");
+                }
+                getEndpoint().getInProgressRepository().remove(message.getTxId());
+                return false;
+            }
 
             /* fetch the message from the server given the txId */
 
@@ -154,34 +166,42 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
                 log.error("error converting shs message '" + message.getTxId() + "' to camel message", e);
                 throw e;
             }
+
+            if (getEndpoint().isSynchronous()) {
+                getProcessor().process(exchange);
+                onDone(exchange, message.getTxId());
+            } else {
+            /* send the normalized message to the next processor in the route */
+                getAsyncProcessor().process(exchange, new AsyncCallback() {
+                    @Override
+                    public void done(boolean doneSync) {
+                        onDone(exchange, message.getTxId());
+                    }
+                });
+            }
         } catch (Exception e) {
             getEndpoint().getInProgressRepository().remove(message.getTxId());
+            return false;
         }
 
+        return true;
+    }
 
-        /* send the normalized message to the next processor in the route */
-        getAsyncProcessor().process(exchange, new AsyncCallback() {
-            @Override
-            public void done(boolean doneSync) {
-
-                if (exchange.getException() != null) {
-                    getExceptionHandler().handleException("Error processing exchange", exchange, exchange.getException());
-                    getEndpoint().getInProgressRepository().remove(message.getTxId());
-                } else {
-                    try {
-                        getShsClient().ack(message.getTxId());
-                        getEndpoint().getIdempotentRepository().add(message.getTxId());
-                        getEndpoint().getInProgressRepository().confirm(message.getTxId());
-                    } catch (Exception e) {
-                        getEndpoint().getInProgressRepository().remove(message.getTxId());
-                        log.error("error acking shs message " + message.getTxId() + " with server,"
-                                + " although message is fetched and processed without errors", e);
-                    }
-                }
+    protected void onDone(Exchange exchange, String txId) {
+        if (exchange.getException() != null) {
+            getExceptionHandler().handleException("Error processing exchange", exchange, exchange.getException());
+            getEndpoint().getInProgressRepository().remove(txId);
+        } else {
+            try {
+                getShsClient().ack(txId);
+                getEndpoint().getIdempotentRepository().add(txId);
+                getEndpoint().getInProgressRepository().confirm(txId);
+            } catch (Exception e) {
+                getEndpoint().getInProgressRepository().remove(txId);
+                log.error("error acking shs message " + txId + " with server,"
+                        + " although message is fetched and processed without errors", e);
             }
-        });
-
-
+        }
     }
 
     @Override
@@ -198,7 +218,9 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
         }
 
         for (Message message : queryResult.getMessage()) {
-            if (getEndpoint().getInProgressRepository().add(message.getTxId())) {
+            if (getEndpoint().getIdempotentRepository().contains(message.getTxId()) == false
+                    && getEndpoint().getInProgressRepository().add(message.getTxId()))
+            {
                 Exchange exchange = getEndpoint().createExchange();
                 exchange.setProperty(Message.class.getCanonicalName(), message);
                 exchanges.add(exchange);
