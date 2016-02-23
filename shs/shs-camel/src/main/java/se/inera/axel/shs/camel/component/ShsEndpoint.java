@@ -24,6 +24,7 @@ import org.apache.camel.Producer;
 import org.apache.camel.impl.ScheduledPollEndpoint;
 import org.apache.camel.processor.idempotent.MemoryIdempotentRepository;
 import org.apache.camel.spi.*;
+import org.apache.camel.util.LRUCache;
 import org.apache.camel.util.ObjectHelper;
 import se.inera.axel.shs.client.MessageListConditions;
 import se.inera.axel.shs.client.ShsClient;
@@ -74,6 +75,9 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
 
     @UriParam(label = "consumer")
     IdempotentRepository<String> inProgressRepository = new MemoryIdempotentRepository();
+
+    @UriParam(label = "consumer")
+    IdempotentRepository<String> idempotentRepository = new MemoryIdempotentRepository(new LRUCache<String, Object>(10000));
 
     @UriParam(label = "consumer")
     ExecutorService fetchExecutorService;
@@ -239,5 +243,13 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
 
     public void setInProgressRepository(IdempotentRepository<String> inProgressRepository) {
         this.inProgressRepository = inProgressRepository;
+    }
+
+    public IdempotentRepository<String> getIdempotentRepository() {
+        return idempotentRepository;
+    }
+
+    public void setIdempotentRepository(IdempotentRepository<String> idempotentRepository) {
+        this.idempotentRepository = idempotentRepository;
     }
 }
