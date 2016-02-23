@@ -55,8 +55,8 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
     @UriParam
     String endrecipient;
 
-    @UriParam(label = "consumer")
-    Integer maxhits;
+    @UriParam(label = "consumer", defaultValue = "50")
+    Integer maxhits = 50;
 
     @UriParam
     ShsClient client;
