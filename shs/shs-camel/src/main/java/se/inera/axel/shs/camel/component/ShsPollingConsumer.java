@@ -144,10 +144,6 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
                 return false;
             }
 
-            /* fetch the message from the server given the txId */
-
-            log.trace("scheduling shs message {} for fetching and processing", message.getTxId());
-
             ShsMessage shsMessage;
             try {
                 shsMessage = getShsClient().fetch(message.getTxId());
@@ -167,15 +163,17 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
                 throw e;
             }
 
-            if (getEndpoint().isSynchronous()) {
-                getProcessor().process(exchange);
-                onDone(exchange, message.getTxId());
-            } else {
             /* send the normalized message to the next processor in the route */
+            if (getEndpoint().isSynchronous()) {
+                log.debug("Message {} fetched and converted to camel. About to process synchronously", message.getTxId());
+                getProcessor().process(exchange);
+                onDone(exchange, message.getTxId(), true);
+            } else {
+                log.debug("Message {} fetched and converted to camel. About to process asynchronously", message.getTxId());
                 getAsyncProcessor().process(exchange, new AsyncCallback() {
                     @Override
                     public void done(boolean doneSync) {
-                        onDone(exchange, message.getTxId());
+                        onDone(exchange, message.getTxId(), doneSync);
                     }
                 });
             }
@@ -187,11 +185,13 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
         return true;
     }
 
-    protected void onDone(Exchange exchange, String txId) {
+    protected void onDone(Exchange exchange, String txId, boolean doneSync) {
+        log.debug("Message {} processed {}", txId, doneSync ? "synchronously" : "asynchronously");
         if (exchange.getException() != null) {
             getExceptionHandler().handleException("Error processing exchange", exchange, exchange.getException());
             getEndpoint().getInProgressRepository().remove(txId);
         } else {
+            log.debug("Acking message {}", txId);
             try {
                 getShsClient().ack(txId);
                 getEndpoint().getIdempotentRepository().add(txId);
