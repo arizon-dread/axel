@@ -98,7 +98,17 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             // process the current exchange
             boolean started;
             try {
-                started = processExchange(exchange);
+                if (getEndpoint().isSynchronous()) {
+                    started = processExchange(exchange);
+                } else {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            processExchange(exchange);
+                        }
+                    });
+                    started = true;
+                }
             } catch (Exception e) {
                 log.error("Error starting shs fetching process", e);
                 started = false;
@@ -108,17 +118,6 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             if (!started) {
                 answer--;
             }
-
-//            try {
-//                executorService.execute(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        processExchange(exchange);
-//                    }
-//                });
-//            } catch (RejectedExecutionException e) {
-//                answer--;
-//            }
         }
 
         return answer;
