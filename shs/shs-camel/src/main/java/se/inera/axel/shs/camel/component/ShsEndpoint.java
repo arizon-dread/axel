@@ -134,6 +134,7 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         conditions.setStatus(getLabelStatus());
         conditions.setMaxhits(getMaxhits());
         conditions.setProducttype(getProducttype());
+        conditions.setFilter("noack");
 
         getComponent().setProperties(conditions, getConsumerProperties());
 
