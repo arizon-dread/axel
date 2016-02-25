@@ -1,6 +1,13 @@
-FROM axelbase:latest
+FROM centos:6
 
-RUN yum install -y openldap-servers openldap-clients && yum clean all -y
+ENV LC_ALL=en_US.UTF-8
+
+RUN yum update -y && yum install -y \
+    openldap-servers \
+    openldap-clients \
+    && yum clean all -y
+
+MAINTAINER Predictly AB <support@predictly.se>
 
 EXPOSE 389
 

@@ -1,5 +1,5 @@
 shs:
-    build: shs-broker
+    image: axel/shs-broker
     links:
         - mongodb:db
         - openldap:ldap
