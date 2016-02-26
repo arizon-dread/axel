@@ -60,7 +60,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
-                            <imageName>axel/shs-broker</imageName>
+                            <imageName>axel-shs-broker</imageName>
                             <dockerDirectory>${project.basedir}/src/main/docker</dockerDirectory>
                         </configuration>
                     </execution>
