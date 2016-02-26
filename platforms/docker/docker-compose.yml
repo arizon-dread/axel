@@ -1,5 +1,5 @@
 shs:
-    image: axel/shs-broker
+    image: axel-shs-broker
     links:
         - mongodb:db
         - openldap:ldap
@@ -8,8 +8,8 @@ shs:
 
 
 mongodb:
-    build: mongodb
+    image: axel-mongodb
 
 openldap:
-    build: ldap
+    image: axel-ldap
 

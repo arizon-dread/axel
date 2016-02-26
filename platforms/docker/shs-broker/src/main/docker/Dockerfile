@@ -15,12 +15,12 @@ RUN curl http://apache.mirrors.spacedump.net/tomcat/tomcat-8/v${TOMCAT_VERSION}/
        | tar -xzC /opt \
     && rm -rf /opt/apache-tomcat-${TOMCAT_VERSION}/webapps/*
 
-ADD axel-shs-broker.war /opt/apache-tomcat-${TOMCAT_VERSION}/webapps/ROOT.war
 
 ENV CATALINA_OPTS "-Daxel.home=file:/home/axel"
 #VOLUME /home/axel
 EXPOSE 8080
 CMD exec /opt/apache-tomcat-${TOMCAT_VERSION}/bin/catalina.sh run
+ENV SHS_ORG_ID=${SHS_ORG_ID:-0000000000}
 
 COPY axel-home /home/axel/
-ENV SHS_ORG_ID=${SHS_ORG_ID:-0000000000}
+ADD axel-shs-broker.war /opt/apache-tomcat-${TOMCAT_VERSION}/webapps/ROOT.war
