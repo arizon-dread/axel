@@ -30,9 +30,13 @@ import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.xml.message.Message;
 import se.inera.axel.shs.xml.message.ShsMessageList;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 /**
  * A polling Camel SHS Message consumer that polls an SHS server for new (asynchronous) messages.
@@ -81,6 +85,7 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             total = maxMessagesPerPoll;
         }
 
+        List<Callable<Boolean>> tasks = new ArrayList<>();
         for (int index = 0; index < total && isBatchAllowed(); index++) {
             // only loop if we are started (allowed to run)
             // use poll to remove the head so it does not consume memory even after we have processed it
@@ -101,12 +106,18 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
                 if (getEndpoint().isSynchronous()) {
                     started = processExchange(exchange);
                 } else {
-                    executorService.execute(new Runnable() {
+                    tasks.add(new Callable<Boolean>() {
                         @Override
-                        public void run() {
-                            processExchange(exchange);
+                        public Boolean call() throws Exception {
+                            return processExchange(exchange);
                         }
                     });
+//                    executorService.execute(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            processExchange(exchange);
+//                        }
+//                    });
                     started = true;
                 }
             } catch (Exception e) {
@@ -117,6 +128,18 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             // if we did not start process the file then decrement the counter
             if (!started) {
                 answer--;
+            }
+        }
+
+        if (!getEndpoint().isSynchronous() && !tasks.isEmpty()) {
+            answer = 0;
+            // should block until all tasks is done or failed.
+            for (Future<Boolean> result : executorService.invokeAll(tasks)) {
+                if (result.isDone()) {
+                    if (result.get() == Boolean.TRUE) {
+                        answer += 1;
+                    }
+                }
             }
         }
 
