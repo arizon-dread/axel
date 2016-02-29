@@ -221,8 +221,8 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
                 getEndpoint().getInProgressRepository().confirm(txId);
             } catch (Exception e) {
                 getEndpoint().getInProgressRepository().remove(txId);
-                log.error("error acking shs message " + txId + " with server,"
-                        + " although message is fetched and processed without errors", e);
+                log.warn("error acking shs message " + txId + " with server,"
+                        + " although message is fetched and processed without errors");
             }
         }
     }
