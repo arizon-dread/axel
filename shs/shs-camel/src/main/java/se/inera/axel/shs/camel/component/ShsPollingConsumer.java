@@ -76,7 +76,6 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
     public ShsPollingConsumer(ShsEndpoint endpoint, Processor processor, ExecutorService executorService) {
         super(endpoint, processor);
         this.executorService = executorService;
-        this.setDelay(5000);
     }
 
     @Override
