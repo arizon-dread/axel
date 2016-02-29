@@ -37,9 +37,14 @@ import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A polling Camel SHS Message consumer that polls an SHS server for new (asynchronous) messages.
+ * <p/>
+ *
+ * If endpoint is not set to synchronous it uses the executorService to run the fetch/process tasks asynchronously in parallel.
+ *
  * <p/>
  *
  * This consumer executes this loop:
@@ -71,6 +76,7 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
     public ShsPollingConsumer(ShsEndpoint endpoint, Processor processor, ExecutorService executorService) {
         super(endpoint, processor);
         this.executorService = executorService;
+        this.setDelay(5000);
     }
 
     @Override
@@ -85,7 +91,9 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             total = maxMessagesPerPoll;
         }
 
+        // holder for asynchronous tasks
         List<Callable<Boolean>> tasks = new ArrayList<>();
+
         for (int index = 0; index < total && isBatchAllowed(); index++) {
             // only loop if we are started (allowed to run)
             // use poll to remove the head so it does not consume memory even after we have processed it
@@ -100,41 +108,35 @@ public class ShsPollingConsumer extends ScheduledBatchPollingConsumer {
             // update pending number of exchanges
             pendingExchanges = total - index - 1;
 
-            // process the current exchange
-            boolean started;
-            try {
-                if (getEndpoint().isSynchronous()) {
+            if (getEndpoint().isSynchronous()) {
+                boolean started;
+                try {
                     started = processExchange(exchange);
-                } else {
-                    tasks.add(new Callable<Boolean>() {
-                        @Override
-                        public Boolean call() throws Exception {
-                            return processExchange(exchange);
-                        }
-                    });
-//                    executorService.execute(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            processExchange(exchange);
-//                        }
-//                    });
-                    started = true;
+                } catch (Exception e) {
+                    log.error("Error starting shs fetching process", e);
+                    started = false;
                 }
-            } catch (Exception e) {
-                log.error("Error starting shs fetching process", e);
-                started = false;
-            }
 
-            // if we did not start process the file then decrement the counter
-            if (!started) {
-                answer--;
+                // if we did not start process the file then decrement the counter
+                if (!started) {
+                    answer--;
+                }
+            } else {
+                tasks.add(new Callable<Boolean>() {
+                    @Override
+                    public Boolean call() throws Exception {
+                        return processExchange(exchange);
+                    }
+                });
             }
         }
 
+
+
         if (!getEndpoint().isSynchronous() && !tasks.isEmpty()) {
             answer = 0;
-            // should block until all tasks is done or failed.
-            for (Future<Boolean> result : executorService.invokeAll(tasks)) {
+            // should block until all tasks is done (successfully or failed).
+            for (Future<Boolean> result : executorService.invokeAll(tasks, 5, TimeUnit.MINUTES)) {
                 if (result.isDone()) {
                     if (result.get() == Boolean.TRUE) {
                         answer += 1;
