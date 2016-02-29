@@ -86,7 +86,8 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
             throws Exception
     {
         super(uri, component);
-
+        setDelay(5000);
+        setGreedy(true);
     }
 
     @Override
@@ -139,8 +140,6 @@ public class ShsEndpoint extends ScheduledPollEndpoint {
         getComponent().setProperties(conditions, getConsumerProperties());
 
         ShsPollingConsumer shsPollingConsumer = new ShsPollingConsumer(this, processor, fetchExecutorService);
-        shsPollingConsumer.setDelay(5000);
-        shsPollingConsumer.setGreedy(true);
 
         configureConsumer(shsPollingConsumer);
         shsPollingConsumer.setExceptionHandler(getExceptionHandler());
