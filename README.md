@@ -72,7 +72,7 @@ Konfigurera OpenLDAP för SHS
 Ldap-servern måste prepareras med
 
 * En rot för SHS, L=SHS
-* [SHS-schemat](docs/src/main/resources/ldap/axel-shs-schema.ldif) måste läggas in.
+* [SHS-schemat](docs/src/main/resources/ldap/shs-schema.ldif) måste läggas in.
 * Samt importera en liten struktur från en LDIF-fil. ([Exempel](docs/src/main/resources/ldap/axel-systemtest.ldif))
 
 

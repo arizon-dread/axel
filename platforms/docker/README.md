@@ -14,4 +14,4 @@ Projeket innehåller tre docker images och en docker-compose som visar ett sätt
 * shs-broker
     Axel SHS Server deployad i en Apache Tomcat instans.
 
-Konfigurationen för shs-broker ligger i [axel-home/etc/shs-broker.properties](shs-broker/src/main/docker/axel-home/etc/shs-broker.properties).
+Konfigurationen för shs-broker ligger i [axel-home/etc/shs-broker.properties](shs-broker/src/main/docker/axel-home/etc/).
