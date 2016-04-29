@@ -24,7 +24,7 @@ Dessa programvaror behöver finnas förinstallerade för att man ska kunna bygga
 * MongoDB 2.4  
 * LDAP Server med SHS-katalogen, central eller lokal. Se nedan för instruktioner.
 
-MongoDB och OpenLDAP finns även konfigurerade och klara för användning i Docker-konfigurationen i `axel/platforms/docker` om man föredrar att använda Docker. 
+MongoDB och OpenLDAP finns även konfigurerade och klara för användning i Docker-konfigurationen under [plattformar](platforms/docker/README.md) om man föredrar att använda Docker. 
 
 Bygga
 ---------------
@@ -44,15 +44,21 @@ En WAR-fil med enbart SHS-servern finns paketerad i
 
 Installera
 ---------------
-Det enklaste sättet att installera en Axel-server är att bygga de docker-images som specas i
- `axel/platforms/docker/docker-compose.yml`. Konfigurationen i dessa görs enklast med miljövariabler. 
- Vill man ändra defaultkonfigurationen kan man lägga in egna konfigurationsfiler och bygga en ny image.
+Det enklaste sättet att installera en komplett, körklar, Axel SHS-broker är att bygga docker-images och köra docker-compose.
+
+    cd axel/platforms/docker
+    mvn clean install 
+    docker-compose -f docker-compose.yml up -d
+
+Konfigurationen i dessa görs enklast med miljövariabler. 
+Vill man ändra defaultkonfigurationen kan man lägga in egna cert och konfigurationsfiler och bygga en ny image.
+Se [dokumentationen](platforms/docker/README.md) för mer information.
 
 Ett annat alternativ är att packa upp distributionsfilen `axel-2.0.0.tar.gz` på lämpligt ställe:
 
-    $ tar xvfz axel-2.0.0.tar.gz -C /opt
+    tar xvfz axel-2.0.0.tar.gz -C /opt
 
-När detta är gjort kan du läsa om konfiguration m.m. i filen `/opt/axel-2.0.0/README.md`
+När detta är gjort kan du läsa om konfiguration m.m. i filen [/opt/axel-2.0.0/README.md](platforms/karaf/distribution/src/main/distribution/README.md)
 
 
 *Observera att denna förpaketerade version enbart är testad under Linux.*
@@ -66,10 +72,8 @@ Konfigurera OpenLDAP för SHS
 Ldap-servern måste prepareras med
 
 * En rot för SHS, L=SHS
-* SHS-schemat måste läggas in.
-* Samt importera en liten struktur från en LDIF-fil.
-
-Schema och exempel ldif-fil ligger i `axel/platforms/karaf/distribution/src/main/distribution/etc/ldap`.
+* [SHS-schemat](docs/src/main/resources/ldap/shs-schema.ldif) måste läggas in.
+* Samt importera en liten struktur från en LDIF-fil. ([Exempel](docs/src/main/resources/ldap/axel-systemtest.ldif))
 
 
 
