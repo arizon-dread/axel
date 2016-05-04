@@ -18,6 +18,12 @@
             <artifactId>apache-karaf</artifactId>
             <version>${karaf.version}</version>
             <type>tar.gz</type>
+            <exclusions>
+                <exclusion>
+                    <artifactId>osgi</artifactId>
+                    <groupId>org.eclipse</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.karaf.assemblies.features</groupId>
