@@ -31,16 +31,18 @@ import se.inera.axel.shs.xml.label.To;
 import java.util.List;
 import java.util.UUID;
 
-public class SimpleLabelValidator {
+public class SimpleLabelValidator implements LabelValidator {
 	public SimpleLabelValidator() {
         super();
     }
 	
+	@Override
 	public void validate(ShsMessage message)  throws ShsException {
 		
 		validate(message.getLabel());
 	}
 	
+	@Override
 	public void validate(ShsLabel label) throws ShsException {
 		validateOriginatorOrFrom(label);
 		validateTo(label);

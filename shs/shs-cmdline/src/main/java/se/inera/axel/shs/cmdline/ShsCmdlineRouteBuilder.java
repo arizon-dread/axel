@@ -21,7 +21,6 @@ package se.inera.axel.shs.cmdline;
 import org.apache.camel.Exchange;
 import org.apache.camel.Header;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.component.http.HttpOperationFailedException;
@@ -33,12 +32,11 @@ import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import se.inera.axel.shs.camel.DataPartToCamelMessageProcessor;
 import se.inera.axel.shs.camel.DefaultCamelToShsMessageProcessor;
 import se.inera.axel.shs.camel.DefaultShsMessageToCamelProcessor;
-import se.inera.axel.shs.camel.ShsMessageToDataParListProcessor;
+import se.inera.axel.shs.camel.ShsMessageToDataPartListProcessor;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.processor.SimpleLabelValidator;
 import se.inera.axel.shs.xml.message.ShsMessageList;
 
-import javax.xml.transform.OutputKeys;
 import java.net.URISyntaxException;
 import java.util.Map;
 
@@ -110,7 +108,7 @@ public class ShsCmdlineRouteBuilder extends RouteBuilder {
 
         from("direct:fetch").routeId("fetch")
                 .to("direct:ds:fetch")
-                .bean(new ShsMessageToDataParListProcessor())
+                .bean(new ShsMessageToDataPartListProcessor())
                 .to("direct:writeShsLabel")
                 .split(body())
                     .bean(new DataPartToCamelMessageProcessor())
