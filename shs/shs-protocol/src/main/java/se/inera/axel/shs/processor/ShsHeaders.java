@@ -53,6 +53,7 @@ public class ShsHeaders {
 	
 	public static final String DESTINATION_URI = "ShsDestinationUri";
 
+    public static final String SHS_CONTENT_TYPE = "message/rfc822";
     public static final String X_SHS_TXID = "X-shs-txid";
     public static final String X_SHS_CORRID = "X-shs-corrid";
     public static final String X_SHS_CONTENTID = "X-shs-contentid";

@@ -21,51 +21,238 @@ package se.inera.axel.shs.camel.component;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.impl.ScheduledPollEndpoint;
+import org.apache.camel.processor.idempotent.MemoryIdempotentRepository;
+import org.apache.camel.spi.*;
+import org.apache.camel.util.LRUCache;
+import org.apache.camel.util.ObjectHelper;
+import se.inera.axel.shs.client.MessageListConditions;
+import se.inera.axel.shs.client.ShsClient;
+import se.inera.axel.shs.processor.LabelValidator;
+import se.inera.axel.shs.processor.SimpleLabelValidator;
+
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 /**
- * Represents a HelloWorld endpoint.
+ * Represents an SHS endpoint.
  */
-public class ShsEndpoint extends DefaultEndpoint {
-	private ShsExceptionHandler exceptionHandler;
-	private String destinationUri;
+@UriEndpoint(scheme = "shs", syntax = "shs:command", title = "SHS", consumerClass = ShsPollingConsumer.class )
+public class ShsEndpoint extends ScheduledPollEndpoint {
 
-    public ShsEndpoint() {
-    }
+    @UriPath(enums = "send,request,fetch") @Metadata(required = "true")
+    String command;
 
-    public ShsEndpoint(String uri, ShsComponent component) {
+    @UriParam
+    String producttype;
+
+    @UriParam(name = "status", enums = "test,production", defaultValue = "production")
+    String labelStatus;
+
+    @UriParam
+    String originator;
+
+    @UriParam
+    String endrecipient;
+
+    @UriParam(label = "consumer", defaultValue = "50")
+    Integer maxhits = 50;
+
+    @UriParam
+    ShsClient client;
+
+    @UriParam()
+    ShsMessageBinding shsMessageBinding = new DefaultShsMessageBinding();
+
+    @UriParam(label = "producer", description = "Shs address (org nr) of receiver")
+    String to;
+
+    @UriParam(label = "producer")
+    LabelValidator shsLabelValidator = new SimpleLabelValidator();
+
+    @UriParam
+    ExceptionHandler exceptionHandler = null;
+
+    @UriParam(label = "consumer")
+    IdempotentRepository<String> inProgressRepository = new MemoryIdempotentRepository();
+
+    @UriParam(label = "consumer")
+    IdempotentRepository<String> idempotentRepository = new MemoryIdempotentRepository(new LRUCache<String, Object>(10000));
+
+    @UriParam(label = "consumer")
+    ExecutorService fetchExecutorService;
+
+    public ShsEndpoint(String uri, ShsComponent component, Map<String, Object> parameters)
+            throws Exception
+    {
         super(uri, component);
+        setDelay(5000);
+        setGreedy(true);
     }
 
-    public ShsEndpoint(String endpointUri) {
-        super(endpointUri);
+    @Override
+    public boolean isLenientProperties() {
+        return false;
     }
+
+    @Override
+    public ShsComponent getComponent() {
+        return (ShsComponent)super.getComponent();
+    }
+
 
     public Producer createProducer() throws Exception {
+
+        ObjectHelper.notNull(getClient(), "client");
+        ObjectHelper.notEmpty(getCommand(), "command");
+        ObjectHelper.notNull(getExceptionHandler(), "exceptionHandler");
+
+        String[] validCommands = { "send", "request" };
+        if (!ObjectHelper.contains(validCommands, getCommand()))
+            throw new IllegalArgumentException("Unknown command:" + getCommand());
+
         return new ShsProducer(this);
     }
 
     public Consumer createConsumer(Processor processor) throws Exception {
-        return new ShsConsumer(this, processor);
+
+        ObjectHelper.notNull(getClient(), "client");
+        ObjectHelper.notEmpty(getCommand(), "command");
+
+        ObjectHelper.notNull(getExceptionHandler(), "exceptionHandler");
+
+        String[] validCommands = { "fetch" };
+        if (!ObjectHelper.contains(validCommands, getCommand()))
+            throw new IllegalArgumentException("Unknown command:" + getCommand());
+
+        if (fetchExecutorService == null) {
+            fetchExecutorService = getCamelContext().getExecutorServiceManager().newDefaultThreadPool(this, "shs-fetch");
+        }
+        /* configure message list criterias */
+        MessageListConditions conditions = new MessageListConditions();
+        conditions.setEndrecipient(getEndrecipient());
+        conditions.setOriginator(getOriginator());
+        conditions.setStatus(getLabelStatus());
+        conditions.setMaxhits(getMaxhits());
+        conditions.setProducttype(getProducttype());
+        conditions.setFilter("noack");
+
+        getComponent().setProperties(conditions, getConsumerProperties());
+
+        ShsPollingConsumer shsPollingConsumer = new ShsPollingConsumer(this, processor, fetchExecutorService);
+
+        configureConsumer(shsPollingConsumer);
+        shsPollingConsumer.setExceptionHandler(getExceptionHandler());
+        shsPollingConsumer.setConditions(conditions);
+
+        return shsPollingConsumer;
     }
 
     public boolean isSingleton() {
         return true;
     }
 
-	public ShsExceptionHandler getExceptionHandler() {
-		return exceptionHandler;
-	}
+    public String getCommand() {
+        return command;
+    }
 
-	public void setExceptionHandler(ShsExceptionHandler exceptionHandler) {
-		this.exceptionHandler = exceptionHandler;
-	}
+    public void setCommand(String command) {
+        this.command = command;
+    }
 
-	public String getDestinationUri() {
-		return destinationUri;
-	}
+    public String getTo() {
+        return to;
+    }
 
-	public void setDestinationUri(String uri) {
-		this.destinationUri = uri;
-	}
+    public void setTo(String to) {
+        this.to = to;
+    }
+
+    public String getProducttype() {
+        return producttype;
+    }
+
+    public void setProducttype(String producttype) {
+        this.producttype = producttype;
+    }
+
+    public String getOriginator() {
+        return originator;
+    }
+
+    public void setOriginator(String originator) {
+        this.originator = originator;
+    }
+
+    public String getEndrecipient() {
+        return endrecipient;
+    }
+
+    public void setEndrecipient(String endrecipient) {
+        this.endrecipient = endrecipient;
+    }
+
+    public Integer getMaxhits() {
+        return maxhits;
+    }
+
+    public void setMaxhits(Integer maxhits) {
+        this.maxhits = maxhits;
+    }
+
+    public String getLabelStatus() {
+        return labelStatus;
+    }
+
+    public void setLabelStatus(String labelStatus) {
+        this.labelStatus = labelStatus;
+    }
+
+    public ShsClient getClient() {
+        return client;
+    }
+
+    public void setClient(ShsClient client) {
+        this.client = client;
+    }
+
+    public ShsMessageBinding getShsMessageBinding() {
+        return shsMessageBinding;
+    }
+
+    public void setShsMessageBinding(ShsMessageBinding shsMessageBinding) {
+        this.shsMessageBinding = shsMessageBinding;
+    }
+
+    public ExceptionHandler getExceptionHandler() {
+        return exceptionHandler;
+    }
+
+    public void setExceptionHandler(ExceptionHandler exceptionHandler) {
+        this.exceptionHandler = exceptionHandler;
+    }
+
+    public LabelValidator getShsLabelValidator() {
+        return shsLabelValidator;
+    }
+
+    public void setShsLabelValidator(LabelValidator shsLabelValidator) {
+        this.shsLabelValidator = shsLabelValidator;
+    }
+
+    public IdempotentRepository<String> getInProgressRepository() {
+        return inProgressRepository;
+    }
+
+    public void setInProgressRepository(IdempotentRepository<String> inProgressRepository) {
+        this.inProgressRepository = inProgressRepository;
+    }
+
+    public IdempotentRepository<String> getIdempotentRepository() {
+        return idempotentRepository;
+    }
+
+    public void setIdempotentRepository(IdempotentRepository<String> idempotentRepository) {
+        this.idempotentRepository = idempotentRepository;
+    }
 }

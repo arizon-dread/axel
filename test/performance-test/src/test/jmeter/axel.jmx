@@ -67,6 +67,11 @@
             <stringProp name="Argument.value">${__P(httpTimeout,30000)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
+          <elementProp name="shsToLocal-" elementType="Argument">
+            <stringProp name="Argument.name">shsToLocal-</stringProp>
+            <stringProp name="Argument.value">0000000000</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
         </collectionProp>
       </elementProp>
       <stringProp name="TestPlan.user_define_classpath"></stringProp>
@@ -98,13 +103,13 @@
         <stringProp name="TestPlan.comments">		</stringProp>
       </UserParameters>
       <hashTree/>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="local request response" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="local request response" enabled="false">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
           <intProp name="LoopController.loops">-1</intProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">${threads}</stringProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <longProp name="ThreadGroup.start_time">1380907266000</longProp>
         <longProp name="ThreadGroup.end_time">1380907266000</longProp>
@@ -215,9 +220,9 @@ dHkudXRpbC5sb2cuSmF2YVV0aWxMb2cKCg==&#xd;
         <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <intProp name="LoopController.loops">-1</intProp>
+          <stringProp name="LoopController.loops">100</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">${threads}</stringProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <longProp name="ThreadGroup.start_time">1380304144000</longProp>
         <longProp name="ThreadGroup.end_time">1380304144000</longProp>
@@ -245,7 +250,7 @@ Content-Transfer-Encoding: binary&#xd;
 &lt;!DOCTYPE shs.label SYSTEM &quot;shs-label-1.2.dtd&quot;&gt;&#xd;
 &lt;shs.label version=&quot;1.2&quot; tx.id=&quot;${txId}&quot; corr.id=&quot;${txId}&quot; transfer-type=&quot;asynch&quot; message-type=&quot;simple&#xd;
 &quot; document-type=&quot;simple&quot; sequence-type=&quot;event&quot; status=&quot;test&quot;&gt;&#xd;
-    &lt;from&gt;urn:X-shs:${shsFrom}&lt;/from&gt;&#xd;
+    &lt;from&gt;urn:X-shs:0000000000.jmeter&lt;/from&gt;&#xd;
     &lt;to&gt;urn:X-shs:${shsToLocal}&lt;/to&gt;&#xd;
     &lt;product&gt;urn:X-shs:00000000-0000-0000-0000-000000000000&lt;/product&gt;&#xd;
     &lt;subject&gt;jmeter testar&lt;/subject&gt;&#xd;
@@ -333,7 +338,7 @@ dHkudXRpbC5sb2cuSmF2YVV0aWxMb2cKCg==&#xd;
           <hashTree/>
         </hashTree>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="fetch messages" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="fetch messages" enabled="false">
         <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
@@ -488,7 +493,7 @@ dHkudXRpbC5sb2cuSmF2YVV0aWxMb2cKCg==&#xd;
           </hashTree>
         </hashTree>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="fetch confirms and errors" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="fetch confirms and errors" enabled="false">
         <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
@@ -660,7 +665,7 @@ dHkudXRpbC5sb2cuSmF2YVV0aWxMb2cKCg==&#xd;
         <stringProp name="filename"></stringProp>
       </ResultCollector>
       <hashTree/>
-      <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="false">
+      <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
           <name>saveConfig</name>

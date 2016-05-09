@@ -18,13 +18,10 @@
  */
 package se.inera.axel.shs.broker.agreement.mongo;
 
-import org.apache.camel.spring.javaconfig.test.JavaConfigContextLoader;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 
-@ContextConfiguration(locations =
-        {"se.inera.axel.shs.broker.agreement.mongo.MongoDBTestContextConfig"},
-        loader = JavaConfigContextLoader.class)
+@ContextConfiguration(classes = MongoDBTestContextConfig.class)
 public class AbstractAgreementIT extends AbstractTestNGSpringContextTests {
 	
 	

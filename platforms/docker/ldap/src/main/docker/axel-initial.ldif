@@ -1,0 +1,67 @@
+dn: l=SHS
+objectClass: locality
+objectClass: top
+l: shs
+
+dn: o=Myndighetsprodukter,l=SHS
+objectClass: organization
+objectClass: top
+o: Myndighetsprodukter
+
+dn: o=Myndighetsadresser,l=SHS
+objectClass: organization
+objectClass: top
+o: Myndighetsadresser
+
+dn: o=Predictly AB,l=SHS
+objectClass: top
+objectClass: organization
+objectClass: shsOrgExtension
+o: Predictly AB
+organizationNumber: 5569856411
+description: Predictly AB
+labeledURI: http://www.predictly.se/
+postalAddress: Bromma
+postalCode: 167 51
+street: Gustavslundsvägen 143
+telephoneNumber: 08-509 07 407
+
+dn: ou=Product types,o=Predictly AB,l=SHS
+objectClass: top
+objectClass: organizationalUnit
+ou: Product types
+
+dn: ou=Agreements,o=Predictly AB,l=SHS
+objectClass: top
+objectClass: organizationalUnit
+ou: Agreements
+
+dn: ou=Addresses,o=Predictly AB,l=SHS
+objectClass: top
+objectClass: organizationalUnit
+ou: Addresses
+
+
+dn: o=Zero AB,l=SHS
+objectClass: top
+objectClass: organization
+objectClass: shsOrgExtension
+o: Zero AB
+organizationNumber: 0000000000
+description:: QmFyYSBub2xsb3IK
+
+dn: ou=Addresses,o=Zero AB,l=SHS
+objectClass: top
+objectClass: organizationalUnit
+ou: Addresses
+
+dn: ou=Agreements,o=Zero AB,l=SHS
+objectClass: top
+objectClass: organizationalUnit
+ou: Agreements
+
+dn: ou=Product types,o=Zero AB,l=SHS
+objectClass: top
+objectClass: organizationalUnit
+ou: Product types
+

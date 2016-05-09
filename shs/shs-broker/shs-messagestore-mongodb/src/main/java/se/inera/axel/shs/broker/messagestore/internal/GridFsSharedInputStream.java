@@ -47,11 +47,11 @@ class GridFsSharedInputStream extends InputStream implements SharedInputStream {
 
     public GridFsSharedInputStream(GridFSDBFile gridFSDBFile) {
         this(gridFSDBFile, 0, gridFSDBFile.getLength());
-        LOG.debug("GridFsSharedInputStream(GridFSDBFile)");
+        LOG.trace("GridFsSharedInputStream(GridFSDBFile)");
     }
 
     public GridFsSharedInputStream(GridFSDBFile gridFSDBFile, long offset, long length) {
-        LOG.debug("GridFsSharedInputStream(GridFSDBFile, {}, {})", offset, length);
+        LOG.trace("GridFsSharedInputStream(GridFSDBFile, {}, {})", offset, length);
         this.inputStream = new BufferedInputStream(gridFSDBFile.getInputStream());
         try {
             this.inputStream.skip(offset);
@@ -67,20 +67,20 @@ class GridFsSharedInputStream extends InputStream implements SharedInputStream {
 
     @Override
     public boolean markSupported() {
-        LOG.debug("markSupported");
+        LOG.trace("markSupported" );
         return true;
     }
 
     @Override
     public synchronized void mark(int readlimit) {
-        LOG.debug("mark");
+        LOG.trace("mark" );
         this.mark = this.position;
         this.inputStream.mark(readlimit);
     }
 
     @Override
     public synchronized void reset() throws IOException {
-        LOG.debug("reset");
+        LOG.trace("reset" );
         if (this.mark < 0)
             throw new IOException("reset() called with invalid mark position");
 
@@ -92,7 +92,7 @@ class GridFsSharedInputStream extends InputStream implements SharedInputStream {
     @Override
     public long getPosition() {
         long currentPosition = position - offset;
-        LOG.debug("getPosition return {}", currentPosition);
+        LOG.trace("getPosition return {}", currentPosition);
         return currentPosition;
     }
 
@@ -113,7 +113,7 @@ class GridFsSharedInputStream extends InputStream implements SharedInputStream {
 
     @Override
     public InputStream newStream(long start, long end) {
-        LOG.debug("newStream({}, {})", start, end);
+        LOG.trace("newStream({}, {})", start, end);
         if (start < 0) {
             throw new IllegalArgumentException("Start position of stream must be non negative");
         }
@@ -132,7 +132,7 @@ class GridFsSharedInputStream extends InputStream implements SharedInputStream {
 
     @Override
     public int read() throws IOException {
-        LOG.debug("read");
+        LOG.trace("read" );
         byte[] b = new byte[1];
 
         int read = read(b);
@@ -146,7 +146,7 @@ class GridFsSharedInputStream extends InputStream implements SharedInputStream {
 
     @Override
     public int read(byte[] b) throws IOException {
-        LOG.debug("read(byte[])");
+        LOG.trace("read(byte[])" );
         return read(b , 0 , b.length);
     }
 
@@ -166,7 +166,7 @@ class GridFsSharedInputStream extends InputStream implements SharedInputStream {
 
     @Override
     public int read(byte[] b, int offset, int length) throws IOException {
-        LOG.debug("read(byte[], {}, {})", offset, length);
+        LOG.trace("read(byte[], {}, {})", offset, length);
         if (b == null) {
             throw new NullPointerException();
         } else if (offset < 0 || length < 0 || length > b.length - offset) {

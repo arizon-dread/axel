@@ -39,7 +39,7 @@ import se.inera.axel.shs.broker.agreement.mongo.model.Product;
  * @author Jan Hallonstén, R2M
  *
  */
-@ContextConfiguration
+@ContextConfiguration(classes = MongoDBTestContextConfig.class)
 public class MongoShsAgreementRepositoryIT extends
 		AbstractAgreementIT {
 	
