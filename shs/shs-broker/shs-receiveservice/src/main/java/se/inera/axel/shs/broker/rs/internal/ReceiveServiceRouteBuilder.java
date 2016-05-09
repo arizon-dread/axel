@@ -58,7 +58,7 @@ public class ReceiveServiceRouteBuilder extends RouteBuilder {
             .handled(true)
         .end()
         .filter(header(Exchange.HTTP_METHOD).isEqualTo("POST"))
-        .to("shs:direct-vm:shs:rs")
+        .process(new ShsSubProcessor(constant("direct-vm:shs:rs")))
         .choice().when().simple("${property.ShsLabel.transferType} == 'SYNCH'")
             .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(HttpURLConnection.HTTP_OK))
         .otherwise()

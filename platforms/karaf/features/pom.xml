@@ -4,7 +4,7 @@
     <parent>
         <artifactId>karaf</artifactId>
         <groupId>se.inera.axel.karaf</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>2.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>features</artifactId>
@@ -65,40 +65,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.karaf.tooling</groupId>
-                <artifactId>features-maven-plugin</artifactId>
-                <version>${karaf.version}</version>
-                <executions>
-                    <execution>
-                        <id>create-kar</id>
-                        <goals>
-                            <goal>create-kar</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>axel-${project.version}</finalName>
-                            <featuresFile>target/classes/features.xml</featuresFile>
-                        </configuration>
-                    </execution>
-                </executions>
-                <configuration>
-                    <!-- <bundles>src/main/resources/bundles.properties</bundles>-->
-                    <kernelVersion>${karaf.version}</kernelVersion>
-                    <!--  TODO defaults to "features" but that clash with the manual file above. -->
-                    <attachmentArtifactClassifier>axel-features</attachmentArtifactClassifier>
-                    <outputFile>target/axel-features.xml</outputFile>
-                    <repository>target/features-repo</repository>
-                </configuration>
-                <!-- 				<executions> -->
-                <!-- 					<execution> -->
-                <!-- 						<id>generate</id> -->
-                <!-- 						<phase>generate-resources</phase> -->
-                <!-- 						<goals> -->
-                <!-- 							<goal>generate-features-xml</goal> -->
-                <!-- 						</goals> -->
-                <!-- 					</execution> -->
-                <!-- 				</executions> -->
             </plugin>
         </plugins>
     </build>

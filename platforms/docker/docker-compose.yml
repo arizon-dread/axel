@@ -1,0 +1,15 @@
+shs:
+    image: axel-shs-broker
+    links:
+        - mongodb:db
+        - openldap:ldap
+    ports:
+        - "8080:8080"
+
+
+mongodb:
+    image: axel-mongodb
+
+openldap:
+    image: axel-ldap
+

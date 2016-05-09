@@ -208,8 +208,8 @@ public class ShsMessageMarshaller {
 			ShsMessage shsMessage = new ShsMessage();
 			
 			BodyPart labelPart = multipart.getBodyPart(0);		
-			if (!labelPart.isMimeType("text/xml")) {
-				throw new IllegalMessageStructureException("First bodypart is not text/xml but " + labelPart.getContentType());
+			if (!labelPart.isMimeType("text/xml") && !labelPart.isMimeType("text/plain")) {
+				throw new IllegalMessageStructureException("First bodypart is not text/xml nor text/plain but was " + labelPart.getContentType());
 			}
 	
 			ShsLabel label = shsLabelMarshaller.unmarshal((String) labelPart.getContent());
