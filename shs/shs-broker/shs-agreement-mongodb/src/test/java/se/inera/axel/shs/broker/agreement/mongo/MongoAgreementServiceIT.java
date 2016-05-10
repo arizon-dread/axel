@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
 import se.inera.axel.shs.xml.agreement.ObjectFactory;
 import se.inera.axel.shs.xml.agreement.ShsAgreement;
 
-@ContextConfiguration
+@ContextConfiguration(classes = MongoDBTestContextConfig.class)
 public class MongoAgreementServiceIT extends AbstractAgreementIT {
 	@Autowired
 	private MongoShsAgreementRepository repository;

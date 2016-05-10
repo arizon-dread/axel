@@ -388,7 +388,7 @@ public interface MessageLogService {
             private static List<String> ASCENDING_VALUES = Arrays.asList("asc", "ascending");
 
             /**
-             * Returns the {@link SortOrder} enum for the given {@link String} value.
+             * Returns the {@link se.inera.axel.shs.broker.messagestore.MessageLogService.Filter.SortOrder} enum for the given {@link String} value.
              *
              * @param value valid values are ascending, asc, descending, desc. The values are case insensitive.
              *              <code>null</code> is valid.

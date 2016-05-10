@@ -36,7 +36,7 @@ import static se.inera.axel.shs.xml.label.ShsLabelMaker.ShsLabelInstantiator.*;
 public class SimpleLabelValidatorTest {
 	ObjectFactory shsLabelFactory = new ObjectFactory();
 	
-	SimpleLabelValidator validator;
+	LabelValidator validator;
 	Maker<ShsLabel> labelMaker;
 	
 	@Test

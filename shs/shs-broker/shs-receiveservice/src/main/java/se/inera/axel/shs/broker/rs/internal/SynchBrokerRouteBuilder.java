@@ -24,6 +24,7 @@ import org.apache.camel.Property;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.http.HttpOperationFailedException;
+import org.apache.camel.util.jsse.SSLContextParameters;
 import se.inera.axel.shs.processor.ShsHeaders;
 import se.inera.axel.shs.processor.ShsMessageMarshaller;
 import se.inera.axel.shs.xml.label.SequenceType;
@@ -77,18 +78,22 @@ public class SynchBrokerRouteBuilder extends RouteBuilder {
 
         from("direct:sendSynchRemote").routeId("direct:sendSynchRemote")
         .removeHeaders("CamelHttp*")
-        .setHeader(Exchange.HTTP_URI, method("shsRouter", "resolveEndpoint(${property.ShsLabel})"))
+        .setHeader(Exchange.HTTP_URI, method("shsRouter", "resolveEndpoint(${body.label})"))
+        .beanRef("messageLogService", "loadMessage")
         .choice().when(PredicateBuilder.startsWith(header(Exchange.HTTP_URI), constant("https")))
-            .convertBodyTo(String.class)
-            .to("https4://shsServer?httpClient.soTimeout=300000&disableStreamCache=true&sslContextParameters=shsRsSslContext&x509HostnameVerifier=allowAllHostnameVerifier")
+            .to("https4://shsServer?httpClient.socketTimeout=300000&disableStreamCache=true&sslContextParameters=shsRsSslContext&x509HostnameVerifier=allowAllHostnameVerifier")
         .otherwise()
-            .to("http4://shsServer?httpClient.soTimeout=300000&disableStreamCache=true")
+            .to("http4://shsServer?httpClient.socketTimeout=300000&disableStreamCache=true")
         .end();
 
 
         from("direct:sendSynchLocal").routeId("direct:sendSynchLocal")
-        .setHeader(ShsHeaders.DESTINATION_URI, method("shsRouter", "resolveEndpoint(${property.ShsLabel})"))
-        .to("shs:local");
+        .setHeader(ShsHeaders.DESTINATION_URI, method("shsRouter", "resolveEndpoint(${body.label})"))
+        .process(new ShsSubProcessor(header(ShsHeaders.DESTINATION_URI)));
+    }
+
+    private void configureSsl() {
+        SSLContextParameters sslContextParameters = getContext().getRegistry().lookup("mySslContext", SSLContextParameters.class);
     }
 
     static public class ReplyLabelProcessor {
