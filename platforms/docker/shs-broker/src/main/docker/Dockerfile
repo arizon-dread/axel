@@ -10,7 +10,7 @@ RUN yum update -y && yum install -y \
 
 MAINTAINER Predictly AB <support@predictly.se>
 
-ENV TOMCAT_VERSION=8.0.32
+ENV TOMCAT_VERSION=8.0.38
 RUN curl http://apache.mirrors.spacedump.net/tomcat/tomcat-8/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz \
        | tar -xzC /opt \
     && rm -rf /opt/apache-tomcat-${TOMCAT_VERSION}/webapps/*
